@@ -41,6 +41,27 @@ public class SidebarOtherSettings {
         exportButton.setOnAction((ev) -> {FunkyLogSorter.saveToFile(primaryStage);});
         otherSettingsBox.getChildren().add(exportButton);
 
+        Region testLogButtonspacing = new Region();
+        testLogButtonspacing.setMinHeight(20);
+        otherSettingsBox.getChildren().add(testLogButtonspacing);
+        
+        Button testLogButton = new Button("Test Log");
+        testLogButton.setOnAction((ev) -> {
+            FunkyLogSorter.createTestLog(primaryStage);
+        });
+        otherSettingsBox.getChildren().add(testLogButton);
+
+        Button testWarningButton = new Button("Test Warning");
+        testWarningButton.setOnAction((ev) -> {
+            FunkyLogSorter.createTestWarning(primaryStage);
+        });
+        otherSettingsBox.getChildren().add(testWarningButton);
+
+        Button testErrorButton = new Button("Test Error");
+        testErrorButton.setOnAction((ev) -> {
+            FunkyLogSorter.createTestError(primaryStage);
+        });
+        otherSettingsBox.getChildren().add(testErrorButton);
 
         return otherSettingsBox;
     }

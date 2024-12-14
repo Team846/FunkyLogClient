@@ -186,8 +186,6 @@ public class FunkyLogs extends Application {
     }
 
     public static void main(String[] args) {
-        // FunkyLogSorter.main(args);
-
         launch(args);
     }
 }

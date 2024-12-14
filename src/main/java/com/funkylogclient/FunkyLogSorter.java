@@ -106,15 +106,6 @@ public class FunkyLogSorter {
         reFilter();
     }
 
-    // Only for testing
-    public static void main(String[] args) {
-        // addMessage(new Message("0;1.0;a;abc"));
-        // addMessage(new Message("1;2.0;a;cde"));
-        // addMessage(new Message("2;2.0;a;cdef"));
-
-        // logAllMessages();
-    }
-
     public static void logAllMessages() {
         System.out.println("\nSTART");
         for (Message m : filtered) {
@@ -140,9 +131,9 @@ public class FunkyLogSorter {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
         String dateString = dateTime.format(formatter);
 
-        fileChooser.setInitialFileName(dateString + ".log_846");
+        fileChooser.setInitialFileName(dateString + ".txt");
 
-        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("FunkyLog (*.log_846)", "*.log_846");
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Text documents", ".txt");
         fileChooser.getExtensionFilters().add(extFilter);
 
         File file = fileChooser.showSaveDialog(pstage);
@@ -155,6 +146,21 @@ public class FunkyLogSorter {
                 e.printStackTrace();
             }
         }
+    }
+
+    public static void createTestLog(Stage pstage) {
+        addMessage(new Message("0;This is a Log;TestSender;0.0"));
+        logAllMessages();
+    }
+
+    public static void createTestWarning(Stage pstage) {
+        addMessage(new Message("1;This is a Warning;TestSender;0.0"));
+        logAllMessages();
+    }
+
+    public static void createTestError(Stage pstage) {
+        addMessage(new Message("2;This is an Error;TestSender;0.0")); 
+        logAllMessages();
     }
 
 }
