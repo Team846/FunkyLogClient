@@ -15,6 +15,9 @@ public class Message {
     private String sender;
     private double time;
 
+    private double period_timestamp;
+    private int period;
+
     public Message(String unparsed) {
         try {
             String[] split = unparsed.split(";");
@@ -32,11 +35,13 @@ public class Message {
         }
     }
 
-    public Message(int type, String content, String sender, double time) {
+    public Message(int type, String sender, String content, double time, int period, double period_timestamp) {
         this.type = type;
-        this.content = content;
         this.sender = sender;
+        this.content = content;
         this.time = time;
+        this.period = period;
+        this.period_timestamp = period_timestamp;
     }
 
     public String getContent() {
@@ -49,6 +54,14 @@ public class Message {
 
     public double getTime() {
         return time;
+    }
+
+    public double getPeriodTimestamp() {
+        return period_timestamp;
+    }
+
+    public int getPeriod() {
+        return period;
     }
 
     public boolean isLog() {
@@ -65,24 +78,9 @@ public class Message {
 
     @Override
     public String toString() {
-        String output = new String();
-        if (isLog())
-            output += "[LOG] ";
-        else if (isWarning())
-            output += "[WARNING] ";
-        else if (isError())
-            output += "[ERROR] ";
-
-        output += "<";
-        output += time;
-        output += "> ";
-
-        output += sender;
-        output += ": ";
-
-        output += content;
-        output += " ";
-
+        String output = "";
+        output += type + ";" + sender + ";" + content + ";" + "<" + time + ">" + ";" + period + ";" + "<" + period_timestamp + ">";
+        
         return output;
     }
 

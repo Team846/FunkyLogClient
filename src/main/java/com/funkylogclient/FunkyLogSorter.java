@@ -149,17 +149,17 @@ public class FunkyLogSorter {
     }
 
     public static void createTestLog(Stage pstage) {
-        addMessage(new Message("0;This is a Log;TestSender;0.0"));
+        addMessage(new Message("0;TestSender;This is a Log;0.0;0;0.0"));
         logAllMessages();
     }
 
     public static void createTestWarning(Stage pstage) {
-        addMessage(new Message("1;This is a Warning;TestSender;0.0"));
+        addMessage(new Message("1;TestSender;This is a Warning;0.0;0;0.0"));
         logAllMessages();
     }
 
     public static void createTestError(Stage pstage) {
-        addMessage(new Message("2;This is an Error;TestSender;0.0")); 
+        addMessage(new Message("2;TestSender;This is an Error;0.0;0;0.0")); 
         logAllMessages();
     }
 
