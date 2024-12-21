@@ -1,6 +1,5 @@
 package com.funkylogclient;
 
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.LinkedList;

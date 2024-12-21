@@ -147,8 +147,4 @@ public class Message {
 
         return box;
     }
-    public static void main(String[] args) {
-        Message m = new Message("0;TestSender;This is a Log;<0.0>;0;<0.0>");
-        System.out.println(m);
-    }
 };

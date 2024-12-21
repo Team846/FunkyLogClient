@@ -18,6 +18,10 @@ import javafx.stage.StageStyle;
 import javafx.scene.Cursor;
 import javafx.scene.text.*;
 
+import javafx.scene.control.Button; 
+import javafx.stage.Popup; 
+
+
 public class FunkyLogs extends Application {
 
     private BorderPane root;
@@ -26,6 +30,9 @@ public class FunkyLogs extends Application {
     private double xr = 1100;
     private double yu = 70;
     private double yd = 650;
+    private static int count = 0;
+    private static int x = 50, y = 70;
+
 
     private static VBox messageZone;
 
@@ -99,7 +106,7 @@ public class FunkyLogs extends Application {
         enableResizing(primaryStage, root);
 
         root.setStyle("-fx-background-radius: 10; -fx-background-color: #1E1E1E;");
-
+        
         Task<Void> updateTask = new Task<Void>() {
             @Override
             protected Void call() throws Exception {
@@ -109,7 +116,7 @@ public class FunkyLogs extends Application {
                     }
                     Thread.sleep(200);
                     try {
-                        FunkyLogs.updateMessageZone();
+                        FunkyLogs.updateMessageZone(primaryStage);
                     } catch (Exception exc) {
                         System.out.println(exc);
                     }
@@ -123,13 +130,33 @@ public class FunkyLogs extends Application {
         updateThread.start();
     }
 
-    private static void updateMessageZone() {
+    private static void updateMessageZone(Stage stage) {
         Platform.runLater(() -> {
             FunkyLogs.messageZone.getChildren().clear();
             @SuppressWarnings("unchecked")
             LinkedList<Message> fmessages_copy = (LinkedList<Message>) FunkyLogSorter.filtered.clone();
+            int a = 0;
             for (Message msg : fmessages_copy) {
+                if (msg.isError()) a++;
                 FunkyLogs.messageZone.getChildren().add(msg.getComponent());
+                if (msg.isError() && count < a) {
+                    count++;
+                    System.out.println(a);
+                    Button close = new Button("x");
+                    close.setLayoutX(480);
+                    close.setLayoutY(10);
+                    Popup p = new Popup();
+                    p.setX(x);
+                    p.setY(y);
+                    close.setOnAction(e -> {
+                        p.hide();
+                    });
+                    p.getContent().add(msg.getComponent());
+                    p.getContent().add(close);
+                    p.show(stage);
+                    x += 60;
+                    y += 60;
+                }
             }
         });
     }
