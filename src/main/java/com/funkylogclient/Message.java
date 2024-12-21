@@ -17,11 +17,12 @@ public class Message {
 
     private double period_timestamp;
     private int period;
+    
+    private boolean isValid;
 
     public Message(String unparsed) {
         try {
             String[] split = unparsed.split(";");
-
             type = Integer.parseInt(split[0]);
             time = Double.parseDouble(split[3]);
             sender = split[1];
@@ -35,6 +36,28 @@ public class Message {
         }
     }
 
+    public Message(String unparsed, boolean a) {
+        try {
+            unparsed = unparsed.replace("<", "");
+            unparsed = unparsed.replace(">", "");
+            String[] split = unparsed.split(";");
+            type = Integer.parseInt(split[0]);
+            time = Double.parseDouble(split[3]);
+            sender = split[1];
+            content = split[2];
+            period = Integer.parseInt(split[4]);
+            period_timestamp = Double.parseDouble(split[5]);
+            isValid = true;
+        } catch (Exception exc) {
+            System.out.println("Error in parsing message: " + unparsed);
+
+            isValid = false;
+            content = new String();
+            sender = new String("Unknown");
+            time = 0.0;
+        }
+    }
+
     public Message(int type, String sender, String content, double time, int period, double period_timestamp) {
         this.type = type;
         this.sender = sender;
@@ -42,6 +65,10 @@ public class Message {
         this.time = time;
         this.period = period;
         this.period_timestamp = period_timestamp;
+    }
+
+    public Boolean getValid() {
+        return isValid;
     }
 
     public String getContent() {
@@ -119,5 +146,9 @@ public class Message {
         box.getChildren().addAll(top, body);
 
         return box;
+    }
+    public static void main(String[] args) {
+        Message m = new Message("0;TestSender;This is a Log;<0.0>;0;<0.0>");
+        System.out.println(m);
     }
 };
