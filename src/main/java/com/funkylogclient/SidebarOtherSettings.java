@@ -29,7 +29,7 @@ public class SidebarOtherSettings {
         otherSettingsBox.getChildren().add(midSpacing);
 
         Button clearLogsButton = new Button("Clear logs");
-        clearLogsButton.setOnAction((ev) -> {FunkyLogSorter.clear();});
+        clearLogsButton.setOnAction((ev) -> {FunkyLogSorter.clear(); FunkyLogs.resetCount();});
 
         otherSettingsBox.getChildren().add(clearLogsButton);
 

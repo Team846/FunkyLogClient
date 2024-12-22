@@ -31,7 +31,10 @@ public class FunkyLogs extends Application {
     private double yu = 70;
     private double yd = 650;
     private static int count = 0;
+    private static int clear = 0;
     private static int x = 50, y = 70;
+
+    private static LinkedList<Popup> popups = new LinkedList<Popup>();
 
 
     private static VBox messageZone;
@@ -137,11 +140,16 @@ public class FunkyLogs extends Application {
             LinkedList<Message> fmessages_copy = (LinkedList<Message>) FunkyLogSorter.filtered.clone();
             int a = 0;
             for (Message msg : fmessages_copy) {
-                if (msg.isError()) a++;
                 FunkyLogs.messageZone.getChildren().add(msg.getComponent());
+                if (msg.isError()) a++;
+                if (clear == -1 && popups.size() != 0) {
+                    for (Popup i : popups) {
+                        i.hide();
+                    }
+                    clear = 0;
+                }
                 if (msg.isError() && count < a) {
                     count++;
-                    System.out.println(a);
                     Button close = new Button("x");
                     close.setLayoutX(480);
                     close.setLayoutY(10);
@@ -154,11 +162,25 @@ public class FunkyLogs extends Application {
                     p.getContent().add(msg.getComponent());
                     p.getContent().add(close);
                     p.show(stage);
-                    x += 60;
-                    y += 60;
+                    if (x < 400 && y < 400) {
+                        x += 60;
+                        y += 60;
+                    }
+                    else {
+                        y -= 310;
+                        x -= 330;
+                    }
+                    popups.add(p);
                 }
             }
         });
+    }
+
+    public static void resetCount() {
+        count = 0;
+        x = 50;
+        y = 70;
+        clear = -1;
     }
 
     private void setStageSize(Stage stage) {
