@@ -49,7 +49,7 @@ public class SidebarOtherSettings {
         fileSelectionDialogSpacing.setMinHeight(20);
         otherSettingsBox.getChildren().add(fileSelectionDialogSpacing);
 
-        Button fileSelectionDialog = new Button("Select File");
+        Button fileSelectionDialog = new Button("Open log");
         fileSelectionDialog.setOnAction((ev) -> {
             LogFileProcesser.selectFile(primaryStage);
         });
