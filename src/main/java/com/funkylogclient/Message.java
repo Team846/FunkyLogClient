@@ -2,10 +2,8 @@ package com.funkylogclient;
 
 import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.layout.Background;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 
 public class Message {
@@ -18,20 +16,25 @@ public class Message {
     private double period_timestamp;
     private int period;
 
+    private boolean isValid;
+
     public Message(String unparsed) {
         try {
             String[] split = unparsed.split(";");
-
             type = Integer.parseInt(split[0]);
             time = Double.parseDouble(split[3]);
             sender = split[1];
             content = split[2];
+
+            isValid = true;
         } catch (Exception exc) {
             System.out.println("Error in parsing message: " + unparsed);
 
             content = new String();
             sender = new String("Unknown");
             time = 0.0;
+
+            isValid = false;
         }
     }
 
@@ -42,6 +45,10 @@ public class Message {
         this.time = time;
         this.period = period;
         this.period_timestamp = period_timestamp;
+    }
+
+    public Boolean getValid() {
+        return isValid;
     }
 
     public String getContent() {
@@ -79,8 +86,9 @@ public class Message {
     @Override
     public String toString() {
         String output = "";
-        output += type + ";" + sender + ";" + content + ";" + "<" + time + ">" + ";" + period + ";" + "<" + period_timestamp + ">";
-        
+        output += type + ";" + sender + ";" + content + ";" + time + ";" + period + ";"
+                + period_timestamp;
+
         return output;
     }
 

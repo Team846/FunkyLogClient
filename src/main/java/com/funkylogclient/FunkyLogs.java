@@ -36,6 +36,7 @@ public class FunkyLogs extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        FunkyLogSorter.makeNewLogFile();
         primaryStage.setTitle("FunkyLogs v1.0.0");
 
         root = new BorderPane();
@@ -72,7 +73,8 @@ public class FunkyLogs extends Application {
         mScrollPane.setFitToWidth(true);
         mScrollPane.setFitToHeight(true);
         messageZone.heightProperty().addListener((observable, oldValue, newValue) -> {
-            if (FunkyLogs.auto_scroll) mScrollPane.setVvalue(1.0);
+            if (FunkyLogs.auto_scroll)
+                mScrollPane.setVvalue(1.0);
         });
         mScrollPane.setStyle(Styles.SCROLL_PANE_STYLE);
 
@@ -80,14 +82,20 @@ public class FunkyLogs extends Application {
 
         root.setCenter(center);
 
-        root.setRight(RightSidebar.getRightSidebar(getClass().getResource("logo.png"), 
-            getClass().getResource("exit.png"), primaryStage, 
-            (observable, prev, value) -> { FunkyLogs.auto_scroll = value; }, 
-            (observable, prev, value) -> { FunkyLogs.serverIP = value; },
-            (observable, prev, value) -> { FunkyLogs.port = Integer.parseInt(value); },
-            (ev) -> { 
-                UDPClient.setConnectionAddress(FunkyLogs.serverIP, FunkyLogs.port); 
-            }));
+        root.setRight(RightSidebar.getRightSidebar(getClass().getResource("logo.png"),
+                getClass().getResource("exit.png"), primaryStage,
+                (observable, prev, value) -> {
+                    FunkyLogs.auto_scroll = value;
+                },
+                (observable, prev, value) -> {
+                    FunkyLogs.serverIP = value;
+                },
+                (observable, prev, value) -> {
+                    FunkyLogs.port = Integer.parseInt(value);
+                },
+                (ev) -> {
+                    UDPClient.setConnectionAddress(FunkyLogs.serverIP, FunkyLogs.port);
+                }));
 
         Scene scene = new Scene(root, Color.TRANSPARENT);
         primaryStage.initStyle(StageStyle.TRANSPARENT);
@@ -109,7 +117,7 @@ public class FunkyLogs extends Application {
                     }
                     Thread.sleep(200);
                     try {
-                        FunkyLogs.updateMessageZone();
+                        FunkyLogs.updateMessageZone(primaryStage);
                     } catch (Exception exc) {
                         System.out.println(exc);
                     }
@@ -123,7 +131,7 @@ public class FunkyLogs extends Application {
         updateThread.start();
     }
 
-    private static void updateMessageZone() {
+    private static void updateMessageZone(Stage stage) {
         Platform.runLater(() -> {
             FunkyLogs.messageZone.getChildren().clear();
             @SuppressWarnings("unchecked")

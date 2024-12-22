@@ -1,7 +1,6 @@
 package com.funkylogclient;
 
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -29,39 +28,54 @@ public class SidebarOtherSettings {
         otherSettingsBox.getChildren().add(midSpacing);
 
         Button clearLogsButton = new Button("Clear logs");
-        clearLogsButton.setOnAction((ev) -> {FunkyLogSorter.clear();});
+        clearLogsButton.setOnAction((ev) -> {
+            FunkyLogSorter.clear();
+            FunkyLogSorter.makeNewLogFile();
+        });
 
         otherSettingsBox.getChildren().add(clearLogsButton);
 
-        Region buttonSpacing = new Region();
-        buttonSpacing.setMinHeight(20);
-        otherSettingsBox.getChildren().add(buttonSpacing);
+        // Region buttonSpacing = new Region();
+        // buttonSpacing.setMinHeight(20);
+        // otherSettingsBox.getChildren().add(buttonSpacing);
 
-        Button exportButton = new Button("Save logs");
-        exportButton.setOnAction((ev) -> {FunkyLogSorter.saveToFile(primaryStage);});
-        otherSettingsBox.getChildren().add(exportButton);
+        // Button exportButton = new Button("Save logs");
+        // exportButton.setOnAction((ev) -> {
+        // FunkyLogSorter.saveToFile(primaryStage);
+        // });
+        // otherSettingsBox.getChildren().add(exportButton);
 
-        Region testLogButtonspacing = new Region();
-        testLogButtonspacing.setMinHeight(20);
-        otherSettingsBox.getChildren().add(testLogButtonspacing);
-        
-        Button testLogButton = new Button("Test Log");
-        testLogButton.setOnAction((ev) -> {
-            FunkyLogSorter.createTestLog(primaryStage);
+        Region fileSelectionDialogSpacing = new Region();
+        fileSelectionDialogSpacing.setMinHeight(20);
+        otherSettingsBox.getChildren().add(fileSelectionDialogSpacing);
+
+        Button fileSelectionDialog = new Button("Select File");
+        fileSelectionDialog.setOnAction((ev) -> {
+            LogFileProcesser.selectFile(primaryStage);
         });
-        otherSettingsBox.getChildren().add(testLogButton);
+        otherSettingsBox.getChildren().add(fileSelectionDialog);
 
-        Button testWarningButton = new Button("Test Warning");
-        testWarningButton.setOnAction((ev) -> {
-            FunkyLogSorter.createTestWarning(primaryStage);
-        });
-        otherSettingsBox.getChildren().add(testWarningButton);
+        // Region testLogButtonspacing = new Region();
+        // testLogButtonspacing.setMinHeight(20);
+        // otherSettingsBox.getChildren().add(testLogButtonspacing);
 
-        Button testErrorButton = new Button("Test Error");
-        testErrorButton.setOnAction((ev) -> {
-            FunkyLogSorter.createTestError(primaryStage);
-        });
-        otherSettingsBox.getChildren().add(testErrorButton);
+        // Button testLogButton = new Button("Test Log");
+        // testLogButton.setOnAction((ev) -> {
+        // FunkyLogSorter.createTestLog(primaryStage);
+        // });
+        // otherSettingsBox.getChildren().add(testLogButton);
+
+        // Button testWarningButton = new Button("Test Warning");
+        // testWarningButton.setOnAction((ev) -> {
+        // FunkyLogSorter.createTestWarning(primaryStage);
+        // });
+        // otherSettingsBox.getChildren().add(testWarningButton);
+
+        // Button testErrorButton = new Button("Test Error");
+        // testErrorButton.setOnAction((ev) -> {
+        // FunkyLogSorter.createTestError(primaryStage);
+        // });
+        // otherSettingsBox.getChildren().add(testErrorButton);
 
         return otherSettingsBox;
     }
