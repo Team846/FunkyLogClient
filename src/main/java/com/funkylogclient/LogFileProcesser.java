@@ -13,16 +13,18 @@ public class LogFileProcesser {
 	private static Scanner input;
 	private static File file;
 
-
-	public static void selectFile(Stage stage)
-	{
+	public static void selectFile(Stage stage) {
 		try {
-			FileChooser fil_chooser = new FileChooser();
-			// get the file selected
-			file = fil_chooser.showOpenDialog(stage);
-			readFile(file);
-		}
-		catch (Exception e) {
+			FileChooser fileChooser = new FileChooser();
+			FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("FunkyLogs File", "*.log846");
+			fileChooser.getExtensionFilters().add(extFilter);
+			fileChooser.setTitle("Open Log File");
+
+			fileChooser.setInitialDirectory(new File(FunkyLogSorter.getLogFileDirectory()));
+
+			file = fileChooser.showOpenDialog(stage);
+			readFile(file, stage);
+		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
 
@@ -33,30 +35,26 @@ public class LogFileProcesser {
 	}
 
 	public File getFile() {
-		if (file != null) System.out.println(file.getAbsolutePath());
+		if (file != null)
+			System.out.println(file.getAbsolutePath());
 		return file;
 	}
 
-	public static void readFile(File file) {
+	public static void readFile(File file, Stage primaryStage) {
 		try {
 			input = new Scanner(file);
-		}
-		catch ( FileNotFoundException ex) {
-			System.out.println("could not find file"); //testing
+		} catch (FileNotFoundException ex) {
+			System.out.println("File not found");
 			System.exit(1);
 		}
 		LinkedList<Message> messages = new LinkedList<Message>();
 		while (input.hasNextLine()) {
-			Message log = new Message(input.nextLine(), true);
+			Message log = new Message(input.nextLine());
 			if (log.getValid()) {
 				messages.add(log);
 			}
 		}
-		for (Message m : messages) { //testing
-			System.out.println(m);
-		}
-		SavedFunkyLogs.displaySavedLogs(messages);
+		SavedFunkyLogs.displaySavedLogs(messages, primaryStage, file.getName());
 	}
 
 }
-

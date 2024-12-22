@@ -4,17 +4,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class UDPClient {
     public static String serverIP = "10.8.46.2";
@@ -43,11 +32,12 @@ public class UDPClient {
                 } catch (Exception exc) {
                     continue;
                 }
-    
+
                 long ctime = System.currentTimeMillis();
                 if (ctime - lastKeepAlive > 500) {
                     byte[] sendData = "~~~".getBytes();
-                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, UDPClient.port);
+                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress,
+                            UDPClient.port);
                     socket.send(sendPacket);
 
                     lastKeepAlive = ctime;
@@ -112,4 +102,3 @@ public class UDPClient {
         networkingThread.start();
     }
 }
-

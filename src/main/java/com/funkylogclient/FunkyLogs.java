@@ -18,12 +18,6 @@ import javafx.stage.StageStyle;
 import javafx.scene.Cursor;
 import javafx.scene.text.*;
 
-import javafx.scene.control.Button; 
-import javafx.stage.Popup; 
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-
-
 public class FunkyLogs extends Application {
 
     private BorderPane root;
@@ -32,11 +26,6 @@ public class FunkyLogs extends Application {
     private double xr = 1100;
     private double yu = 70;
     private double yd = 650;
-    private static int count = 0;
-    private static int x = 50, y = 500;
-
-    private static LinkedList<Popup> popups = new LinkedList<Popup>();
-    private static LinkedList<Button> buttons = new LinkedList<Button>();
 
     private static VBox messageZone;
 
@@ -47,6 +36,7 @@ public class FunkyLogs extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        FunkyLogSorter.makeNewLogFile();
         primaryStage.setTitle("FunkyLogs v1.0.0");
 
         root = new BorderPane();
@@ -83,7 +73,8 @@ public class FunkyLogs extends Application {
         mScrollPane.setFitToWidth(true);
         mScrollPane.setFitToHeight(true);
         messageZone.heightProperty().addListener((observable, oldValue, newValue) -> {
-            if (FunkyLogs.auto_scroll) mScrollPane.setVvalue(1.0);
+            if (FunkyLogs.auto_scroll)
+                mScrollPane.setVvalue(1.0);
         });
         mScrollPane.setStyle(Styles.SCROLL_PANE_STYLE);
 
@@ -91,14 +82,20 @@ public class FunkyLogs extends Application {
 
         root.setCenter(center);
 
-        root.setRight(RightSidebar.getRightSidebar(getClass().getResource("logo.png"), 
-            getClass().getResource("exit.png"), primaryStage, 
-            (observable, prev, value) -> { FunkyLogs.auto_scroll = value; }, 
-            (observable, prev, value) -> { FunkyLogs.serverIP = value; },
-            (observable, prev, value) -> { FunkyLogs.port = Integer.parseInt(value); },
-            (ev) -> { 
-                UDPClient.setConnectionAddress(FunkyLogs.serverIP, FunkyLogs.port); 
-            }));
+        root.setRight(RightSidebar.getRightSidebar(getClass().getResource("logo.png"),
+                getClass().getResource("exit.png"), primaryStage,
+                (observable, prev, value) -> {
+                    FunkyLogs.auto_scroll = value;
+                },
+                (observable, prev, value) -> {
+                    FunkyLogs.serverIP = value;
+                },
+                (observable, prev, value) -> {
+                    FunkyLogs.port = Integer.parseInt(value);
+                },
+                (ev) -> {
+                    UDPClient.setConnectionAddress(FunkyLogs.serverIP, FunkyLogs.port);
+                }));
 
         Scene scene = new Scene(root, Color.TRANSPARENT);
         primaryStage.initStyle(StageStyle.TRANSPARENT);
@@ -110,7 +107,7 @@ public class FunkyLogs extends Application {
         enableResizing(primaryStage, root);
 
         root.setStyle("-fx-background-radius: 10; -fx-background-color: #1E1E1E;");
-        
+
         Task<Void> updateTask = new Task<Void>() {
             @Override
             protected Void call() throws Exception {
@@ -139,48 +136,10 @@ public class FunkyLogs extends Application {
             FunkyLogs.messageZone.getChildren().clear();
             @SuppressWarnings("unchecked")
             LinkedList<Message> fmessages_copy = (LinkedList<Message>) FunkyLogSorter.filtered.clone();
-            int a = 0;
             for (Message msg : fmessages_copy) {
                 FunkyLogs.messageZone.getChildren().add(msg.getComponent());
-                if (msg.isError()) a++;
-                if (msg.isError() && count < a && popups.size() < 5) {
-                    count++;
-                    Button close = new Button("x");
-                    close.setLayoutX(480);
-                    close.setLayoutY(10);
-                    Popup p = new Popup();
-                    p.setX(x);
-                    p.setY(y);
-                    EventHandler<ActionEvent> closeHandler = event -> {
-                        close.setOnAction(null);
-                        p.hide(); 
-                        System.gc();
-                    };
-                    close.setOnAction(closeHandler);
-                    
-                    p.getContent().add(msg.getComponent());
-                    p.getContent().add(close);
-                    p.show(stage);
-                    y -= 60;
-                    popups.add(p);
-                    buttons.add(close);
-                }
             }
         });
-    }
-
-    public static void resetCount() {
-        count = 0;
-        y = 500;
-        for (Popup i : popups) {
-            i.hide();
-        }
-        for (Button b : buttons) {
-            b.setOnAction(null);
-        }
-        popups.clear();
-        buttons.clear();
-        System.gc();
     }
 
     private void setStageSize(Stage stage) {

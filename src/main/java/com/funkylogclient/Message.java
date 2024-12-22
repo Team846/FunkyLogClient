@@ -2,10 +2,8 @@ package com.funkylogclient;
 
 import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.layout.Background;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 
 public class Message {
@@ -17,7 +15,7 @@ public class Message {
 
     private double period_timestamp;
     private int period;
-    
+
     private boolean isValid;
 
     public Message(String unparsed) {
@@ -27,34 +25,16 @@ public class Message {
             time = Double.parseDouble(split[3]);
             sender = split[1];
             content = split[2];
-        } catch (Exception exc) {
-            System.out.println("Error in parsing message: " + unparsed);
 
-            content = new String();
-            sender = new String("Unknown");
-            time = 0.0;
-        }
-    }
-
-    public Message(String unparsed, boolean a) {
-        try {
-            unparsed = unparsed.replace("<", "");
-            unparsed = unparsed.replace(">", "");
-            String[] split = unparsed.split(";");
-            type = Integer.parseInt(split[0]);
-            time = Double.parseDouble(split[3]);
-            sender = split[1];
-            content = split[2];
-            period = Integer.parseInt(split[4]);
-            period_timestamp = Double.parseDouble(split[5]);
             isValid = true;
         } catch (Exception exc) {
             System.out.println("Error in parsing message: " + unparsed);
 
-            isValid = false;
             content = new String();
             sender = new String("Unknown");
             time = 0.0;
+
+            isValid = false;
         }
     }
 
@@ -106,8 +86,9 @@ public class Message {
     @Override
     public String toString() {
         String output = "";
-        output += type + ";" + sender + ";" + content + ";" + "<" + time + ">" + ";" + period + ";" + "<" + period_timestamp + ">";
-        
+        output += type + ";" + sender + ";" + content + ";" + time + ";" + period + ";"
+                + period_timestamp;
+
         return output;
     }
 

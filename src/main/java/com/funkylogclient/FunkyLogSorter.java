@@ -3,16 +3,16 @@ package com.funkylogclient;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 
+import javafx.animation.PauseTransition;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class FunkyLogSorter {
     private static int MAX_LEN = 1200;
@@ -26,6 +26,11 @@ public class FunkyLogSorter {
     public static LinkedList<Message> messages = new LinkedList<>();
     public static LinkedList<Message> filtered = new LinkedList<>();
 
+    public static int num_open_alerts = 0;
+
+    public static String log_file_directory = System.getProperty("user.dir") + "/logs846";
+    public static FileWriter log_file;
+
     public static void clear() {
         messages.clear();
         filtered.clear();
@@ -35,7 +40,7 @@ public class FunkyLogSorter {
         filtered.clear();
 
         for (Message m : messages) {
-            if (!checkMessageBySearch(m))  {
+            if (!checkMessageBySearch(m)) {
                 continue;
             } else if (allowLogs && m.isLog()) {
                 filtered.add(m);
@@ -48,7 +53,8 @@ public class FunkyLogSorter {
     }
 
     private static boolean checkMessageBySearch(Message msg) {
-        if (searchTerm.equals("")) return true;
+        if (searchTerm.equals(""))
+            return true;
 
         return msg.getSender().contains(searchTerm) || msg.getContent().contains(searchTerm);
     }
@@ -73,7 +79,39 @@ public class FunkyLogSorter {
 
         messages.add(m);
 
-        if (!checkMessageBySearch(m))  {
+        if (log_file != null) {
+            try {
+                log_file.write(m.toString() + "\n");
+            } catch (IOException exc) {
+                exc.printStackTrace();
+            }
+        }
+
+        if (m.isError()) {
+            if (num_open_alerts < 5) {
+                Alert alert = new Alert(AlertType.ERROR);
+                alert.setTitle("FunkyLogs Error Notification");
+                alert.setHeaderText(m.getSender());
+                alert.setContentText(m.getContent());
+
+                alert.setX(alert.getX() + (num_open_alerts * 70));
+                alert.setY(alert.getY() + (num_open_alerts * 70));
+
+                alert.show();
+
+                PauseTransition delay = new PauseTransition(Duration.seconds(5));
+
+                delay.setOnFinished(event -> {
+                    alert.close();
+                    FunkyLogSorter.num_open_alerts--;
+                });
+
+                delay.play();
+
+            }
+        }
+
+        if (!checkMessageBySearch(m)) {
 
         } else if (allowLogs && m.isLog()) {
             filtered.add(m);
@@ -114,6 +152,31 @@ public class FunkyLogSorter {
         System.out.println("END\n");
     }
 
+    public static String makeLogFileName() {
+        LocalDateTime dateTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
+        String dateString = dateTime.format(formatter);
+        return dateString + ".log846";
+    }
+
+    public static String getLogFileDirectory() {
+        return log_file_directory;
+    }
+
+    public static void makeNewLogFile() {
+        try {
+            File directory = new File(log_file_directory);
+            if (!directory.exists()) {
+                directory.mkdir();
+            }
+            if (log_file != null)
+                log_file.close();
+            log_file = new FileWriter(log_file_directory + "/" + makeLogFileName());
+        } catch (IOException exc) {
+            exc.printStackTrace();
+        }
+    }
+
     public static String stringifyAllMessages() {
         StringBuilder result = new StringBuilder();
         for (Message m : messages) {
@@ -127,14 +190,14 @@ public class FunkyLogSorter {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Log File");
 
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("FunkyLogs File", ".log846");
+        fileChooser.getExtensionFilters().add(extFilter);
+
         LocalDateTime dateTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
         String dateString = dateTime.format(formatter);
 
-        fileChooser.setInitialFileName(dateString + ".txt");
-
-        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Text documents", ".txt");
-        fileChooser.getExtensionFilters().add(extFilter);
+        fileChooser.setInitialFileName(dateString + ".log846");
 
         File file = fileChooser.showSaveDialog(pstage);
 
@@ -159,7 +222,7 @@ public class FunkyLogSorter {
     }
 
     public static void createTestError(Stage pstage) {
-        addMessage(new Message("2;TestSender;This is an Error;0.0;0;0.0")); 
+        addMessage(new Message("2;TestSender;This is an Error;0.0;0;0.0"));
         logAllMessages();
     }
 
