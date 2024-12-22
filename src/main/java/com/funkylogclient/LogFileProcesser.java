@@ -37,7 +37,7 @@ public class LogFileProcesser {
 		return file;
 	}
 
-	public static LinkedList<Message> readFile(File file) {
+	public static void readFile(File file) {
 		try {
 			input = new Scanner(file);
 		}
@@ -55,7 +55,7 @@ public class LogFileProcesser {
 		for (Message m : messages) { //testing
 			System.out.println(m);
 		}
-		return messages; //change to popup method call
+		SavedFunkyLogs.displaySavedLogs(messages);
 	}
 
 }
