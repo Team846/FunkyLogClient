@@ -20,6 +20,8 @@ import javafx.scene.text.*;
 
 import javafx.scene.control.Button; 
 import javafx.stage.Popup; 
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 
 
 public class FunkyLogs extends Application {
@@ -31,11 +33,10 @@ public class FunkyLogs extends Application {
     private double yu = 70;
     private double yd = 650;
     private static int count = 0;
-    private static int clear = 0;
-    private static int x = 50, y = 70;
+    private static int x = 50, y = 500;
 
     private static LinkedList<Popup> popups = new LinkedList<Popup>();
-
+    private static LinkedList<Button> buttons = new LinkedList<Button>();
 
     private static VBox messageZone;
 
@@ -142,13 +143,7 @@ public class FunkyLogs extends Application {
             for (Message msg : fmessages_copy) {
                 FunkyLogs.messageZone.getChildren().add(msg.getComponent());
                 if (msg.isError()) a++;
-                if (clear == -1 && popups.size() != 0) {
-                    for (Popup i : popups) {
-                        i.hide();
-                    }
-                    clear = 0;
-                }
-                if (msg.isError() && count < a) {
+                if (msg.isError() && count < a && popups.size() < 5) {
                     count++;
                     Button close = new Button("x");
                     close.setLayoutX(480);
@@ -156,21 +151,19 @@ public class FunkyLogs extends Application {
                     Popup p = new Popup();
                     p.setX(x);
                     p.setY(y);
-                    close.setOnAction(e -> {
-                        p.hide();
-                    });
+                    EventHandler<ActionEvent> closeHandler = event -> {
+                        close.setOnAction(null);
+                        p.hide(); 
+                        System.gc();
+                    };
+                    close.setOnAction(closeHandler);
+                    
                     p.getContent().add(msg.getComponent());
                     p.getContent().add(close);
                     p.show(stage);
-                    if (x < 400 && y < 400) {
-                        x += 60;
-                        y += 60;
-                    }
-                    else {
-                        y -= 310;
-                        x -= 330;
-                    }
+                    y -= 60;
                     popups.add(p);
+                    buttons.add(close);
                 }
             }
         });
@@ -178,9 +171,16 @@ public class FunkyLogs extends Application {
 
     public static void resetCount() {
         count = 0;
-        x = 50;
-        y = 70;
-        clear = -1;
+        y = 500;
+        for (Popup i : popups) {
+            i.hide();
+        }
+        for (Button b : buttons) {
+            b.setOnAction(null);
+        }
+        popups.clear();
+        buttons.clear();
+        System.gc();
     }
 
     private void setStageSize(Stage stage) {
