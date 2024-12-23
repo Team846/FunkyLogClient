@@ -1,10 +1,15 @@
 package com.funkylogclient;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 
 public class Message {
     private int type;
@@ -26,6 +31,9 @@ public class Message {
             sender = split[1];
             content = split[2];
 
+            period = Integer.parseInt(split[4]);
+            period_timestamp = Double.parseDouble(split[5]);
+
             isValid = true;
         } catch (Exception exc) {
             System.out.println("Error in parsing message: " + unparsed);
@@ -33,6 +41,9 @@ public class Message {
             content = new String();
             sender = new String("Unknown");
             time = 0.0;
+
+            period = 0;
+            period_timestamp = 0.0;
 
             isValid = false;
         }
@@ -69,6 +80,17 @@ public class Message {
 
     public int getPeriod() {
         return period;
+    }
+
+    public String getPeriodName() {
+        switch (getPeriod()) {
+            case 1:
+                return "TELE-OP";
+            case 2:
+                return "AUTON";
+            default:
+                return "DISABLED";
+        }
     }
 
     public boolean isLog() {
@@ -112,8 +134,21 @@ public class Message {
 
         box.setPadding(new Insets(5, 5, 5, 5));
 
-        Text top = new Text(time + " [" + sender + "]");
+        HBox topBox = new HBox();
+        topBox.setPadding(new Insets(0, 0, 5, 0));
+        topBox.setSpacing(400);
+
+        Text top = new Text(
+                new BigDecimal(this.time).setScale(1, RoundingMode.HALF_UP).toString() + " [" + sender + "]");
         top.setStyle(Styles.TEXT_STYLE + Styles.TEXT_SMALL);
+
+        Text topRight = new Text(getPeriodName() + " " + new BigDecimal(this.period_timestamp)
+                .setScale(0, RoundingMode.HALF_UP).toString());
+        topRight.setStyle(Styles.TEXT_STYLE + Styles.TEXT_SMALLER);
+        HBox.setHgrow(topRight, Priority.ALWAYS);
+        topRight.setTextAlignment(TextAlignment.RIGHT);
+
+        topBox.getChildren().addAll(top, topRight);
 
         HBox body = new HBox();
         body.setPadding(new Insets(5, 5, 5, 30));
@@ -124,7 +159,7 @@ public class Message {
 
         body.getChildren().add(contentText);
 
-        box.getChildren().addAll(top, body);
+        box.getChildren().addAll(topBox, body);
 
         return box;
     }

@@ -55,27 +55,27 @@ public class SidebarOtherSettings {
         });
         otherSettingsBox.getChildren().add(fileSelectionDialog);
 
-        // Region testLogButtonspacing = new Region();
-        // testLogButtonspacing.setMinHeight(20);
-        // otherSettingsBox.getChildren().add(testLogButtonspacing);
+        Region testLogButtonspacing = new Region();
+        testLogButtonspacing.setMinHeight(20);
+        otherSettingsBox.getChildren().add(testLogButtonspacing);
 
-        // Button testLogButton = new Button("Test Log");
-        // testLogButton.setOnAction((ev) -> {
-        // FunkyLogSorter.createTestLog(primaryStage);
-        // });
-        // otherSettingsBox.getChildren().add(testLogButton);
+        Button testLogButton = new Button("Test Log");
+        testLogButton.setOnAction((ev) -> {
+            FunkyLogSorter.createTestLog(primaryStage);
+        });
+        otherSettingsBox.getChildren().add(testLogButton);
 
-        // Button testWarningButton = new Button("Test Warning");
-        // testWarningButton.setOnAction((ev) -> {
-        // FunkyLogSorter.createTestWarning(primaryStage);
-        // });
-        // otherSettingsBox.getChildren().add(testWarningButton);
+        Button testWarningButton = new Button("Test Warning");
+        testWarningButton.setOnAction((ev) -> {
+            FunkyLogSorter.createTestWarning(primaryStage);
+        });
+        otherSettingsBox.getChildren().add(testWarningButton);
 
-        // Button testErrorButton = new Button("Test Error");
-        // testErrorButton.setOnAction((ev) -> {
-        // FunkyLogSorter.createTestError(primaryStage);
-        // });
-        // otherSettingsBox.getChildren().add(testErrorButton);
+        Button testErrorButton = new Button("Test Error");
+        testErrorButton.setOnAction((ev) -> {
+            FunkyLogSorter.createTestError(primaryStage);
+        });
+        otherSettingsBox.getChildren().add(testErrorButton);
 
         return otherSettingsBox;
     }

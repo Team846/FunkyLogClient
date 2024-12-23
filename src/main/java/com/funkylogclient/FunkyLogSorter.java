@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javafx.animation.PauseTransition;
 import javafx.scene.control.Alert;
@@ -30,6 +33,20 @@ public class FunkyLogSorter {
 
     public static String log_file_directory = System.getProperty("user.dir") + "/logs846";
     public static FileWriter log_file;
+
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+    static {
+        scheduler.scheduleAtFixedRate(() -> {
+            if (log_file != null) {
+                try {
+                    log_file.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 3000, 1000, TimeUnit.MILLISECONDS);
+    }
 
     public static void clear() {
         messages.clear();
@@ -75,8 +92,6 @@ public class FunkyLogSorter {
     }
 
     public static void addMessage(Message m) {
-        System.out.println(m);
-
         messages.add(m);
 
         if (log_file != null) {
@@ -85,6 +100,8 @@ public class FunkyLogSorter {
             } catch (IOException exc) {
                 exc.printStackTrace();
             }
+        } else {
+            System.out.println("Log file not open");
         }
 
         if (m.isError()) {
@@ -172,6 +189,8 @@ public class FunkyLogSorter {
             if (log_file != null)
                 log_file.close();
             log_file = new FileWriter(log_file_directory + "/" + makeLogFileName());
+            System.out.print("Log file created: ");
+            System.out.println(log_file_directory + "/" + makeLogFileName());
         } catch (IOException exc) {
             exc.printStackTrace();
         }
@@ -225,5 +244,4 @@ public class FunkyLogSorter {
         addMessage(new Message("2;TestSender;This is an Error;0.0;0;0.0"));
         logAllMessages();
     }
-
 }
