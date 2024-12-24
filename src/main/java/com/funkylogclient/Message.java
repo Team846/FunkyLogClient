@@ -136,19 +136,22 @@ public class Message {
 
         HBox topBox = new HBox();
         topBox.setPadding(new Insets(0, 0, 5, 0));
-        topBox.setSpacing(400);
+        topBox.setSpacing(20);
 
         Text top = new Text(
-                new BigDecimal(this.time).setScale(1, RoundingMode.HALF_UP).toString() + " [" + sender + "]");
-        top.setStyle(Styles.TEXT_STYLE + Styles.TEXT_SMALL);
+                "SYS " + new BigDecimal(this.time).setScale(1, RoundingMode.HALF_UP).toString());
+        top.setStyle(Styles.TEXT_STYLE + Styles.TEXT_SMALLER);
 
-        Text topRight = new Text(getPeriodName() + " " + new BigDecimal(this.period_timestamp)
+        Text topMid = new Text(getPeriodName() + " " + new BigDecimal(this.period_timestamp)
                 .setScale(0, RoundingMode.HALF_UP).toString());
-        topRight.setStyle(Styles.TEXT_STYLE + Styles.TEXT_SMALLER);
+        topMid.setStyle(Styles.TEXT_STYLE + Styles.TEXT_SMALLER);
+
+        Text topRight = new Text(sender);
+        topRight.setStyle(Styles.TEXT_STYLE + Styles.TEXT_SMALL);
         HBox.setHgrow(topRight, Priority.ALWAYS);
         topRight.setTextAlignment(TextAlignment.RIGHT);
 
-        topBox.getChildren().addAll(top, topRight);
+        topBox.getChildren().addAll(top, topMid, topRight);
 
         HBox body = new HBox();
         body.setPadding(new Insets(5, 5, 5, 30));

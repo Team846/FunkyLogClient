@@ -10,12 +10,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javafx.animation.PauseTransition;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
 public class FunkyLogSorter {
     private static int MAX_LEN = 1200;
@@ -24,12 +20,12 @@ public class FunkyLogSorter {
     private static boolean allowWarnings = true;
     private static boolean allowLogs = true;
 
+    public static LinkedList<Message> errors = new LinkedList<>();
+
     private static String searchTerm = "";
 
     public static LinkedList<Message> messages = new LinkedList<>();
     public static LinkedList<Message> filtered = new LinkedList<>();
-
-    public static int num_open_alerts = 0;
 
     public static String log_file_directory = System.getProperty("user.dir") + "/logs846";
     public static FileWriter log_file;
@@ -105,27 +101,7 @@ public class FunkyLogSorter {
         }
 
         if (m.isError()) {
-            if (num_open_alerts < 5) {
-                Alert alert = new Alert(AlertType.ERROR);
-                alert.setTitle("FunkyLogs Error Notification");
-                alert.setHeaderText(m.getSender());
-                alert.setContentText(m.getContent());
-
-                alert.setX(alert.getX() + (num_open_alerts * 70));
-                alert.setY(alert.getY() + (num_open_alerts * 70));
-
-                alert.show();
-
-                PauseTransition delay = new PauseTransition(Duration.seconds(5));
-
-                delay.setOnFinished(event -> {
-                    alert.close();
-                    FunkyLogSorter.num_open_alerts--;
-                });
-
-                delay.play();
-
-            }
+            errors.add(m);
         }
 
         if (!checkMessageBySearch(m)) {

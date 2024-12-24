@@ -1,12 +1,16 @@
 package com.funkylogclient;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 
+import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.*;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
@@ -15,6 +19,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.util.Duration;
 import javafx.scene.Cursor;
 import javafx.scene.text.*;
 
@@ -33,6 +38,8 @@ public class FunkyLogs extends Application {
 
     private static String serverIP = UDPClient.serverIP;
     private static int port = UDPClient.port;
+
+    private static int num_open_alerts = 0;
 
     @Override
     public void start(Stage primaryStage) {
@@ -118,6 +125,37 @@ public class FunkyLogs extends Application {
                     Thread.sleep(200);
                     try {
                         FunkyLogs.updateMessageZone(primaryStage);
+
+                        Platform.runLater(() -> {
+                            Iterator<Message> iterator = FunkyLogSorter.errors.iterator();
+                            while (iterator.hasNext()) {
+                                Message x = iterator.next();
+                                if (num_open_alerts < 5) {
+                                    Alert alert = new Alert(AlertType.ERROR);
+                                    alert.setTitle("FunkyLogs Error Notification");
+                                    alert.setHeaderText(x.getSender());
+                                    alert.setContentText(x.getContent());
+
+                                    alert.setX(alert.getX() + (num_open_alerts * 70));
+                                    alert.setY(alert.getY() + (num_open_alerts * 70));
+
+                                    alert.show();
+
+                                    num_open_alerts += 1;
+
+                                    PauseTransition delay = new PauseTransition(Duration.seconds(5));
+
+                                    delay.setOnFinished(event -> {
+                                        num_open_alerts--;
+                                        alert.close();
+                                    });
+
+                                    delay.play();
+
+                                    iterator.remove();
+                                }
+                            }
+                        });
                     } catch (Exception exc) {
                         System.out.println(exc);
                     }
