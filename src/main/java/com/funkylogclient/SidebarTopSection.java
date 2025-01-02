@@ -34,7 +34,7 @@ public class SidebarTopSection {
         hoverColorAdjust.setBrightness(0.5);
 
         exitImgBox.setOnMouseClicked((MouseEvent e) -> {
-            primaryStage.close();
+            System.exit(0);
         });
         exitImgBox.setOnMouseEntered((MouseEvent e) -> {
             exitImage.setEffect(hoverColorAdjust);

@@ -44,7 +44,7 @@ public class FunkyLogs extends Application {
     @Override
     public void start(Stage primaryStage) {
         FunkyLogSorter.makeNewLogFile();
-        primaryStage.setTitle("FunkyLogs v1.1.2");
+        primaryStage.setTitle("FunkyLogs v1.1.3");
 
         root = new BorderPane();
         root.getStyleClass().add("root");
