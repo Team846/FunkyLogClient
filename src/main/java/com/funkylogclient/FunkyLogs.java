@@ -9,14 +9,15 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.*;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
+import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
@@ -24,6 +25,8 @@ import javafx.scene.Cursor;
 import javafx.scene.text.*;
 
 public class FunkyLogs extends Application {
+
+    public static final String APP_NAME = "FunkyLogs v1.1.4";
 
     private BorderPane root;
 
@@ -44,10 +47,13 @@ public class FunkyLogs extends Application {
     @Override
     public void start(Stage primaryStage) {
         FunkyLogSorter.makeNewLogFile();
-        primaryStage.setTitle("FunkyLogs v1.1.3");
+        primaryStage.setTitle(APP_NAME);
 
         root = new BorderPane();
         root.getStyleClass().add("root");
+
+
+        root.setTop(createUtilityBar(primaryStage));
 
         VBox center = new VBox();
         center.setStyle(Styles.CENTER);
@@ -229,6 +235,35 @@ public class FunkyLogs extends Application {
             }
             setStageSize(stage);
         });
+    }
+
+    private HBox createUtilityBar(Stage primaryStage) {
+        HBox utilityBar = new HBox(10);
+        utilityBar.setPadding(new Insets(7, 15, 3, 10));
+        utilityBar.setStyle("-fx-background-color: #2E2E2E; -fx-background-radius: 10 10 0 0;");
+    
+        Circle closeButton = createUtilityButton(true, () -> System.exit(0));
+        Circle minimizeButton = createUtilityButton(false, () -> primaryStage.setIconified(true));
+    
+        Label appNameLabel = new Label(APP_NAME);
+        appNameLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
+    
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+    
+        utilityBar.getChildren().addAll(appNameLabel, spacer, minimizeButton, closeButton);
+    
+        return utilityBar;
+    }
+    
+
+    private Circle createUtilityButton(boolean isCloseButton, Runnable action) {
+        Color color = isCloseButton ? Color.RED : Color.YELLOW;
+        Circle button = new Circle(6, color);
+        button.setOnMouseEntered(e -> button.setOpacity(0.8));
+        button.setOnMouseExited(e -> button.setOpacity(1.0));
+        button.setOnMouseClicked(e -> action.run());
+        return button;
     }
 
     public static void main(String[] args) {
