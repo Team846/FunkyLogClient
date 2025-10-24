@@ -22,7 +22,6 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.scene.Cursor;
-import javafx.scene.text.*;
 
 public class FunkyLogs extends Application {
 
@@ -52,7 +51,6 @@ public class FunkyLogs extends Application {
         root = new BorderPane();
         root.getStyleClass().add("root");
 
-
         root.setTop(createUtilityBar(primaryStage));
 
         VBox center = new VBox();
@@ -60,24 +58,38 @@ public class FunkyLogs extends Application {
         center.setPadding(new Insets(10, 10, 10, 10));
 
         VBox centerSearch = new VBox();
-        centerSearch.setPadding(new Insets(5, 5, 15, 5));
+        centerSearch.setStyle(Styles.SEARCH_CONTAINER_STYLE);
+
         HBox withLabelToo = new HBox(15);
-        Text searchLabelText = new Text("Search: ");
-        searchLabelText.setStyle(Styles.TEXT_GMED);
-        withLabelToo.getChildren().add(searchLabelText);
+        withLabelToo.setAlignment(Pos.CENTER_LEFT);
+
+        Label searchLabel = new Label("Search:");
+        searchLabel.setStyle(Styles.LABEL_MED + Styles.BOLD_TEXT);
+
         TextField searchBar = new TextField();
+        searchBar.setStyle(Styles.SEARCH_BAR_STYLE);
+        searchBar.setPromptText("Search logs...");
 
         searchBar.textProperty().addListener((observable, prevValue, newValue) -> {
             FunkyLogSorter.changeSearchTerm(newValue);
         });
 
-        searchBar.setPrefWidth(450);
-        withLabelToo.getChildren().add(searchBar);
+        searchBar.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                searchBar.setStyle(Styles.SEARCH_BAR_FOCUSED_STYLE);
+            } else {
+                searchBar.setStyle(Styles.SEARCH_BAR_STYLE);
+            }
+        });
+
+        Region searchSpacer = new Region();
+        HBox.setHgrow(searchSpacer, Priority.ALWAYS);
+        HBox.setHgrow(searchBar, Priority.ALWAYS);
+        withLabelToo.getChildren().addAll(searchLabel, searchBar, searchSpacer);
         centerSearch.getChildren().add(withLabelToo);
         center.getChildren().add(centerSearch);
 
         messageZone = new VBox();
-        messageZone.setPrefSize(100000, 100000);
         messageZone.setPadding(new Insets(5, 20, 5, 20));
         messageZone.setSpacing(2.0);
         messageZone.setStyle(Styles.SCROLL_PANE_STYLE);
@@ -85,11 +97,13 @@ public class FunkyLogs extends Application {
         ScrollPane mScrollPane = new ScrollPane(messageZone);
         mScrollPane.setFitToWidth(true);
         mScrollPane.setFitToHeight(true);
+        mScrollPane.setStyle(Styles.SCROLL_PANE_STYLE);
+        VBox.setVgrow(mScrollPane, Priority.ALWAYS);
+
         messageZone.heightProperty().addListener((observable, oldValue, newValue) -> {
             if (FunkyLogs.auto_scroll)
                 mScrollPane.setVvalue(1.0);
         });
-        mScrollPane.setStyle(Styles.SCROLL_PANE_STYLE);
 
         center.getChildren().add(mScrollPane);
 
@@ -119,7 +133,8 @@ public class FunkyLogs extends Application {
 
         enableResizing(primaryStage, root);
 
-        root.setStyle("-fx-background-radius: 10; -fx-background-color: #1E1E1E;");
+        root.setStyle(
+                "-fx-background-radius: 12; -fx-background-color: #1A1A1A; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 20, 0, 0, 0);");
 
         Task<Void> updateTask = new Task<Void>() {
             @Override
@@ -195,74 +210,260 @@ public class FunkyLogs extends Application {
     }
 
     private void enableResizing(Stage stage, BorderPane root) {
-        final int borderWidth = 14;
+        final int borderWidth = 8;
+        final int rightBorderWidth = 20;
+        final double[] startX = new double[1];
+        final double[] startY = new double[1];
+        final double[] startWidth = new double[1];
+        final double[] startHeight = new double[1];
+        final double[] startStageX = new double[1];
+        final double[] startStageY = new double[1];
+        final boolean[] isResizing = new boolean[1];
+        final Cursor[] resizeType = new Cursor[1];
 
         root.setOnMouseMoved(event -> {
-            double mouseX = event.getX();
-            double mouseY = event.getY();
+            if (isResizing[0])
+                return;
+
+            double x = event.getX();
+            double y = event.getY();
             double width = root.getWidth();
             double height = root.getHeight();
 
-            if (mouseX > width - borderWidth && mouseY < borderWidth) {
-                root.setCursor(Cursor.NE_RESIZE);
-            } else if (mouseX < borderWidth && mouseY < borderWidth) {
-                root.setCursor(Cursor.NW_RESIZE);
-            } else if (mouseX < borderWidth && mouseY > height - borderWidth) {
-                root.setCursor(Cursor.SW_RESIZE);
-            } else if (mouseX > width - borderWidth && mouseY > height - borderWidth) {
+            if (x > width - rightBorderWidth && y > height - borderWidth) {
                 root.setCursor(Cursor.SE_RESIZE);
+            } else if (x > width - rightBorderWidth) {
+                root.setCursor(Cursor.E_RESIZE);
+            } else if (y > height - borderWidth) {
+                root.setCursor(Cursor.S_RESIZE);
             } else {
-                root.setCursor(Cursor.CROSSHAIR);
+                root.setCursor(Cursor.DEFAULT);
+            }
+        });
+
+        root.setOnMousePressed(event -> {
+            Cursor cursor = root.getCursor();
+            if (cursor != Cursor.DEFAULT) {
+                startX[0] = event.getSceneX();
+                startY[0] = event.getSceneY();
+                startWidth[0] = stage.getWidth();
+                startHeight[0] = stage.getHeight();
+                startStageX[0] = stage.getX();
+                startStageY[0] = stage.getY();
+                resizeType[0] = cursor;
+                isResizing[0] = true;
+                event.consume();
             }
         });
 
         root.setOnMouseDragged(event -> {
-            double mouseX = event.getScreenX();
-            double mouseY = event.getScreenY();
+            if (!isResizing[0])
+                return;
 
-            if (root.getCursor() == Cursor.NW_RESIZE) {
-                xl = mouseX;
-                yu = mouseY;
-            } else if (root.getCursor() == Cursor.SW_RESIZE) {
-                xl = mouseX;
-                yd = mouseY;
-            } else if (root.getCursor() == Cursor.NE_RESIZE) {
-                xr = mouseX;
-                yu = mouseY;
-            } else if (root.getCursor() == Cursor.SE_RESIZE) {
-                xr = mouseX;
-                yd = mouseY;
+            event.consume();
+            double currentX = event.getSceneX();
+            double currentY = event.getSceneY();
+            double deltaX = currentX - startX[0];
+            double deltaY = currentY - startY[0];
+
+            double minWidth = 1000;
+            double minHeight = 580;
+
+            if (resizeType[0] == Cursor.SE_RESIZE) {
+                double newWidthSE = Math.max(minWidth, startWidth[0] + deltaX);
+                double newHeightSE = Math.max(minHeight, startHeight[0] + deltaY);
+                stage.setWidth(newWidthSE);
+                stage.setHeight(newHeightSE);
+            } else if (resizeType[0] == Cursor.E_RESIZE) {
+                double newWidthE = Math.max(minWidth, startWidth[0] + deltaX);
+                stage.setWidth(newWidthE);
+            } else if (resizeType[0] == Cursor.S_RESIZE) {
+                double newHeightS = Math.max(minHeight, startHeight[0] + deltaY);
+                stage.setHeight(newHeightS);
             }
-            setStageSize(stage);
+        });
+
+        root.setOnMouseReleased(event -> {
+            isResizing[0] = false;
+            resizeType[0] = null;
+        });
+
+        root.setOnMouseExited(event -> {
+            if (!isResizing[0]) {
+                root.setCursor(Cursor.DEFAULT);
+            }
         });
     }
 
     private HBox createUtilityBar(Stage primaryStage) {
         HBox utilityBar = new HBox(10);
-        utilityBar.setPadding(new Insets(7, 15, 3, 10));
-        utilityBar.setStyle("-fx-background-color: #2E2E2E; -fx-background-radius: 10 10 0 0;");
-    
+        utilityBar.setPadding(new Insets(8, 15, 5, 15));
+        utilityBar.setStyle(
+                "-fx-background-color: #2A2A2A; -fx-background-radius: 12 12 0 0; -fx-border-color: transparent transparent #404040 transparent; -fx-border-width: 0 0 1px 0;");
+
         Circle closeButton = createUtilityButton(true, () -> System.exit(0));
         Circle minimizeButton = createUtilityButton(false, () -> primaryStage.setIconified(true));
-    
+        Circle maximizeButton = createMaximizeButton(primaryStage);
+
         Label appNameLabel = new Label(APP_NAME);
-        appNameLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
-    
+        appNameLabel.setStyle(
+                "-fx-text-fill: #E0E0E0; -fx-font-size: 15px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif; -fx-font-weight: bold;");
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-    
-        utilityBar.getChildren().addAll(appNameLabel, spacer, minimizeButton, closeButton);
-    
+
+        utilityBar.getChildren().addAll(appNameLabel, spacer, minimizeButton, maximizeButton, closeButton);
+
+        enableDragging(primaryStage, utilityBar);
+
         return utilityBar;
     }
-    
+
+    private void enableDragging(Stage stage, HBox utilityBar) {
+        final double[] xOffset = new double[1];
+        final double[] yOffset = new double[1];
+        final boolean[] isDragging = new boolean[1];
+
+        utilityBar.setOnMousePressed(event -> {
+            xOffset[0] = event.getSceneX();
+            yOffset[0] = event.getSceneY();
+            isDragging[0] = false;
+        });
+
+        utilityBar.setOnMouseDragged(event -> {
+            if (!isDragging[0]) {
+                double deltaX = Math.abs(event.getSceneX() - xOffset[0]);
+                double deltaY = Math.abs(event.getSceneY() - yOffset[0]);
+                if (deltaX > 3 || deltaY > 3) {
+                    isDragging[0] = true;
+                }
+            }
+
+            if (isDragging[0]) {
+                stage.setX(event.getScreenX() - xOffset[0]);
+                stage.setY(event.getScreenY() - yOffset[0]);
+            }
+        });
+
+        utilityBar.setOnMouseReleased(event -> {
+            isDragging[0] = false;
+        });
+
+        Region spacer = (Region) utilityBar.getChildren().get(1);
+        spacer.setOnMousePressed(event -> {
+            xOffset[0] = event.getSceneX();
+            yOffset[0] = event.getSceneY();
+            isDragging[0] = false;
+        });
+
+        spacer.setOnMouseDragged(event -> {
+            if (!isDragging[0]) {
+                double deltaX = Math.abs(event.getSceneX() - xOffset[0]);
+                double deltaY = Math.abs(event.getSceneY() - yOffset[0]);
+                if (deltaX > 3 || deltaY > 3) {
+                    isDragging[0] = true;
+                }
+            }
+
+            if (isDragging[0]) {
+                stage.setX(event.getScreenX() - xOffset[0]);
+                stage.setY(event.getScreenY() - yOffset[0]);
+            }
+        });
+
+        spacer.setOnMouseReleased(event -> {
+            isDragging[0] = false;
+        });
+
+        Label appNameLabel = (Label) utilityBar.getChildren().get(0);
+        appNameLabel.setOnMousePressed(event -> {
+            xOffset[0] = event.getSceneX();
+            yOffset[0] = event.getSceneY();
+            isDragging[0] = false;
+        });
+
+        appNameLabel.setOnMouseDragged(event -> {
+            if (!isDragging[0]) {
+                double deltaX = Math.abs(event.getSceneX() - xOffset[0]);
+                double deltaY = Math.abs(event.getSceneY() - yOffset[0]);
+                if (deltaX > 3 || deltaY > 3) {
+                    isDragging[0] = true;
+                }
+            }
+
+            if (isDragging[0]) {
+                stage.setX(event.getScreenX() - xOffset[0]);
+                stage.setY(event.getScreenY() - yOffset[0]);
+            }
+        });
+
+        appNameLabel.setOnMouseReleased(event -> {
+            isDragging[0] = false;
+        });
+    }
 
     private Circle createUtilityButton(boolean isCloseButton, Runnable action) {
         Color color = isCloseButton ? Color.RED : Color.YELLOW;
-        Circle button = new Circle(6, color);
-        button.setOnMouseEntered(e -> button.setOpacity(0.8));
-        button.setOnMouseExited(e -> button.setOpacity(1.0));
-        button.setOnMouseClicked(e -> action.run());
+        Circle button = new Circle(7, color);
+        button.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 3, 0, 0, 1);");
+
+        button.setOnMouseEntered(e -> {
+            button.setOpacity(0.8);
+            button.setScaleX(1.1);
+            button.setScaleY(1.1);
+            button.setCursor(Cursor.DEFAULT);
+        });
+        button.setOnMouseExited(e -> {
+            button.setOpacity(1.0);
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
+        button.setOnMousePressed(e -> {
+            e.consume();
+            button.setCursor(Cursor.DEFAULT);
+        });
+        button.setOnMouseDragged(e -> {
+            e.consume();
+            button.setCursor(Cursor.DEFAULT);
+        });
+        button.setOnMouseClicked(e -> {
+            e.consume();
+            action.run();
+        });
+        return button;
+    }
+
+    private Circle createMaximizeButton(Stage primaryStage) {
+        Circle button = new Circle(7, Color.GREEN);
+        button.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 3, 0, 0, 1);");
+
+        button.setOnMouseEntered(e -> {
+            button.setOpacity(0.8);
+            button.setScaleX(1.1);
+            button.setScaleY(1.1);
+            button.setCursor(Cursor.DEFAULT);
+        });
+        button.setOnMouseExited(e -> {
+            button.setOpacity(1.0);
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
+        button.setOnMousePressed(e -> {
+            e.consume();
+            button.setCursor(Cursor.DEFAULT);
+        });
+        button.setOnMouseDragged(e -> {
+            e.consume();
+            button.setCursor(Cursor.DEFAULT);
+        });
+        button.setOnMouseClicked(e -> {
+            e.consume();
+            if (primaryStage.isMaximized()) {
+                primaryStage.setMaximized(false);
+            } else {
+                primaryStage.setMaximized(true);
+            }
+        });
         return button;
     }
 

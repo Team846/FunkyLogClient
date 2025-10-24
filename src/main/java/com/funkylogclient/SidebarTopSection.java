@@ -28,19 +28,23 @@ public class SidebarTopSection {
         exitImgBox.getChildren().add(exitImage);
 
         ColorAdjust normalColorAdjust = new ColorAdjust();
-        normalColorAdjust.setBrightness(-0.5);
+        normalColorAdjust.setBrightness(-0.3);
 
         ColorAdjust hoverColorAdjust = new ColorAdjust();
-        hoverColorAdjust.setBrightness(0.5);
+        hoverColorAdjust.setBrightness(0.3);
 
         exitImgBox.setOnMouseClicked((MouseEvent e) -> {
             System.exit(0);
         });
         exitImgBox.setOnMouseEntered((MouseEvent e) -> {
             exitImage.setEffect(hoverColorAdjust);
+            exitImgBox.setScaleX(1.1);
+            exitImgBox.setScaleY(1.1);
         });
         exitImgBox.setOnMouseExited((MouseEvent e) -> {
             exitImage.setEffect(normalColorAdjust);
+            exitImgBox.setScaleX(1.0);
+            exitImgBox.setScaleY(1.0);
         });
 
         HBox topSection = new HBox(10);
