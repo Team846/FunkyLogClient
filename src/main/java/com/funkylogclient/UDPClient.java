@@ -10,14 +10,11 @@ public class UDPClient {
     public static int port = 5808;
 
     public static void setConnectionAddress(String newServerIP, int newPort) {
-        System.out.println("Setting connection address to " + newServerIP + ":" + newPort);
         serverIP = newServerIP;
         port = newPort;
     }
 
     private static final String ENCODING = "\nabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()[]<>|;:',./?~_- ";
-
-    // private static Queue<String> recv_messages = new LinkedList<>();
 
     private static void threadFN() {
         try {
@@ -55,7 +52,6 @@ public class UDPClient {
                 }
 
                 for (String line : parse(receivePacket.getData())) {
-                    // UDPClient.recv_messages.add(line);
                     FunkyLogSorter.addMessage(new Message(line));
                 }
             }

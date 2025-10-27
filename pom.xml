@@ -8,7 +8,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <java.home>C:\Users\Knottyjaguar\Downloads\jdk</java.home>
     </properties>
+    <repositories>
+        <repository>
+            <id>wpifrcmaven</id>
+            <url>https://frcmaven.wpi.edu/artifactory/release/</url>
+        </repository>
+    </repositories>
     <dependencies>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -20,6 +27,32 @@
             <artifactId>javafx-fxml</artifactId>
             <version>17</version>
         </dependency>
+        <dependency>
+            <groupId>edu.wpi.first.ntcore</groupId>
+            <artifactId>ntcore-java</artifactId>
+            <version>2025.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.wpi.first.ntcore</groupId>
+            <artifactId>ntcore-jni</artifactId>
+            <version>2025.3.2</version>
+            <classifier>windowsx86-64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>edu.wpi.first.wpiutil</groupId>
+            <artifactId>wpiutil-java</artifactId>
+            <version>2025.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.15.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.15.2</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -29,6 +62,7 @@
                 <version>3.8.0</version>
                 <configuration>
                     <release>17</release>
+                    <executable>C:\Users\Knottyjaguar\Downloads\jdk\bin\javac.exe</executable>
                 </configuration>
             </plugin>
             <plugin>
@@ -42,6 +76,46 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>com.funkylogclient.Main</mainClass>
+                            <systemProperties>
+                                <property>
+                                    <name>java.library.path</name>
+                                    <value>${project.build.directory}/libs</value>
+                                </property>
+                                <property>
+                                    <name>wpiutil.debug</name>
+                                    <value>true</value>
+                                </property>
+                                <property>
+                                    <name>wpiutil.nativelibdir</name>
+                                    <value>${project.build.directory}/libs</value>
+                                </property>
+                            </systemProperties>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>unpack-native-libs</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>edu.wpi.first.ntcore</groupId>
+                                    <artifactId>ntcore-jni</artifactId>
+                                    <version>2025.3.2</version>
+                                    <classifier>windowsx86-64</classifier>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
                         </configuration>
                     </execution>
                 </executions>

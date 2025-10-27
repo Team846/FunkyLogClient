@@ -45,16 +45,6 @@ public class SidebarOtherSettings {
 
         otherSettingsBox.getChildren().add(clearLogsButton);
 
-        // Region buttonSpacing = new Region();
-        // buttonSpacing.setMinHeight(20);
-        // otherSettingsBox.getChildren().add(buttonSpacing);
-
-        // Button exportButton = new Button("Save logs");
-        // exportButton.setOnAction((ev) -> {
-        // FunkyLogSorter.saveToFile(primaryStage);
-        // });
-        // otherSettingsBox.getChildren().add(exportButton);
-
         Region fileSelectionDialogSpacing = new Region();
         fileSelectionDialogSpacing.setMinHeight(5);
         otherSettingsBox.getChildren().add(fileSelectionDialogSpacing);
@@ -70,28 +60,6 @@ public class SidebarOtherSettings {
         fileSelectionDialog.setOnMouseExited(e -> fileSelectionDialog.setStyle(Styles.BUTTON_STYLE));
 
         otherSettingsBox.getChildren().add(fileSelectionDialog);
-
-        // Region testLogButtonspacing = new Region();
-        // testLogButtonspacing.setMinHeight(20);
-        // otherSettingsBox.getChildren().add(testLogButtonspacing);
-
-        // Button testLogButton = new Button("Test Log");
-        // testLogButton.setOnAction((ev) -> {
-        // FunkyLogSorter.createTestLog(primaryStage);
-        // });
-        // otherSettingsBox.getChildren().add(testLogButton);
-
-        // Button testWarningButton = new Button("Test Warning");
-        // testWarningButton.setOnAction((ev) -> {
-        // FunkyLogSorter.createTestWarning(primaryStage);
-        // });
-        // otherSettingsBox.getChildren().add(testWarningButton);
-
-        // Button testErrorButton = new Button("Test Error");
-        // testErrorButton.setOnAction((ev) -> {
-        // FunkyLogSorter.createTestError(primaryStage);
-        // });
-        // otherSettingsBox.getChildren().add(testErrorButton);
 
         return otherSettingsBox;
     }

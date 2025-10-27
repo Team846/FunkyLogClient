@@ -11,13 +11,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.application.Platform;
 
 public class RightSidebar {
         public static VBox getRightSidebar(URL logoURL, URL exitImgURL, Stage primaryStage,
                         ChangeListener<Boolean> autoScrollChangeListener,
                         ChangeListener<? super String> addrFieldChangeListener,
                         ChangeListener<? super String> portFieldChangeListener,
-                        EventHandler<ActionEvent> confirmButtonListener) {
+                        EventHandler<ActionEvent> confirmButtonListener, String activeTab) {
 
                 VBox sidebarContent = new VBox();
                 sidebarContent.setPadding(new Insets(2, 5, 5, 5));
@@ -30,15 +31,54 @@ public class RightSidebar {
                 title.setStyle(Styles.TEXT_STYLE + Styles.BOLD_TEXT);
                 sidebarContent.getChildren().add(title);
 
-                sidebarContent.getChildren().addAll(SidebarFilters.getSidebarFilters());
+                if ("Dashboard".equals(activeTab)) {
+                        sidebarContent.getChildren().addAll(SidebarNetworkTablesSettings.getSidebarNetworkTablesSettings(
+                                        (ev) -> {
+                                                NetworkTablesClient.connect();
+                                        },
+                                        (ev) -> {
+                                                NetworkTablesClient.disconnect();
+                                        }));
 
-                sidebarContent.getChildren()
-                                .add(SidebarOtherSettings.getSidebarOtherSettings(autoScrollChangeListener,
-                                                primaryStage));
+                        sidebarContent.getChildren().addAll(SidebarNetworkTablesChooser.getNetworkTablesChooser());
 
-                sidebarContent.getChildren()
-                                .addAll(SidebarNetworkSettings.getSidebarNetworkSettings(addrFieldChangeListener,
-                                                portFieldChangeListener, confirmButtonListener));
+                        NetworkTablesClient.connectedProperty().addListener((observable, oldValue, newValue) -> {
+                                Platform.runLater(() -> {
+                                        SidebarNetworkTablesSettings.updateStatus(
+                                                        newValue,
+                                                        NetworkTablesClient.getStatusText(),
+                                                        NetworkTablesClient.getLatency());
+                                });
+                        });
+
+                        NetworkTablesClient.statusTextProperty().addListener((observable, oldValue, newValue) -> {
+                                Platform.runLater(() -> {
+                                        SidebarNetworkTablesSettings.updateStatus(
+                                                        NetworkTablesClient.isConnected(),
+                                                        newValue,
+                                                        NetworkTablesClient.getLatency());
+                                });
+                        });
+
+                        NetworkTablesClient.latencyProperty().addListener((observable, oldValue, newValue) -> {
+                                Platform.runLater(() -> {
+                                        SidebarNetworkTablesSettings.updateStatus(
+                                                        NetworkTablesClient.isConnected(),
+                                                        NetworkTablesClient.getStatusText(),
+                                                        newValue.doubleValue());
+                                });
+                        });
+                } else {
+                        sidebarContent.getChildren().addAll(SidebarFilters.getSidebarFilters());
+
+                        sidebarContent.getChildren()
+                                        .add(SidebarOtherSettings.getSidebarOtherSettings(autoScrollChangeListener,
+                                                        primaryStage));
+
+                        sidebarContent.getChildren()
+                                        .addAll(SidebarNetworkSettings.getSidebarNetworkSettings(addrFieldChangeListener,
+                                                        portFieldChangeListener, confirmButtonListener));
+                }
 
                 ScrollPane scrollPane = new ScrollPane(sidebarContent);
                 scrollPane.setFitToWidth(true);

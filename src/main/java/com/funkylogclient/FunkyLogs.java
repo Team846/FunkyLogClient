@@ -45,6 +45,7 @@ public class FunkyLogs extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        UDPClient.start();
         FunkyLogSorter.makeNewLogFile();
         primaryStage.setTitle(APP_NAME);
 
@@ -53,9 +54,19 @@ public class FunkyLogs extends Application {
 
         root.setTop(createUtilityBar(primaryStage));
 
-        VBox center = new VBox();
-        center.setStyle(Styles.CENTER);
-        center.setPadding(new Insets(10, 10, 10, 10));
+        TabPane tabPane = new TabPane();
+        tabPane.setStyle(
+                "-fx-background-color: #1A1A1A; -fx-border-color: #30363D; -fx-border-width: 1px; -fx-tab-min-width: 80px; -fx-tab-min-height: 24px; -fx-tab-max-height: 24px; -fx-control-inner-background: #1A1A1A; -fx-background-insets: 0; -fx-tab-area-background: #1A1A1A; -fx-tab-header-background: #1A1A1A; -fx-tab-header-area-background: #1A1A1A; -fx-content-area-background: #1A1A1A; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-tab-header-area-spacing: 20px;");
+        tabPane.getStyleClass().add("tab-pane");
+
+        Tab logsTab = new Tab("Logs");
+        logsTab.setClosable(false);
+        logsTab.setStyle(
+                "-fx-background-color: #404040; -fx-text-fill: #E0E0E0; -fx-padding: 0px 2px; -fx-font-size: 11px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+
+        VBox logsContent = new VBox();
+        logsContent.setStyle(Styles.CENTER);
+        logsContent.setPadding(new Insets(10, 10, 10, 10));
 
         VBox centerSearch = new VBox();
         centerSearch.setStyle(Styles.SEARCH_CONTAINER_STYLE);
@@ -87,7 +98,7 @@ public class FunkyLogs extends Application {
         HBox.setHgrow(searchBar, Priority.ALWAYS);
         withLabelToo.getChildren().addAll(searchLabel, searchBar, searchSpacer);
         centerSearch.getChildren().add(withLabelToo);
-        center.getChildren().add(centerSearch);
+        logsContent.getChildren().add(centerSearch);
 
         messageZone = new VBox();
         messageZone.setPadding(new Insets(5, 20, 5, 20));
@@ -105,11 +116,23 @@ public class FunkyLogs extends Application {
                 mScrollPane.setVvalue(1.0);
         });
 
-        center.getChildren().add(mScrollPane);
+        logsContent.getChildren().add(mScrollPane);
+        logsTab.setContent(logsContent);
 
-        root.setCenter(center);
+        Tab dashboardTab = new Tab("Dashboard");
+        dashboardTab.setClosable(false);
+        dashboardTab.setStyle(
+                "-fx-background-color: #404040; -fx-text-fill: #E0E0E0; -fx-padding: 0px 2px; -fx-font-size: 11px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
 
-        root.setRight(RightSidebar.getRightSidebar(getClass().getResource("logo.png"),
+        Dashboard dashboard = new Dashboard();
+        dashboardTab.setContent(dashboard.getContainer());
+
+        tabPane.getTabs().addAll(logsTab, dashboardTab);
+
+        root.setCenter(tabPane);
+
+        String[] activeTab = { "Logs" };
+        VBox sidebar = RightSidebar.getRightSidebar(getClass().getResource("logo.png"),
                 getClass().getResource("exit.png"), primaryStage,
                 (observable, prev, value) -> {
                     FunkyLogs.auto_scroll = value;
@@ -122,9 +145,33 @@ public class FunkyLogs extends Application {
                 },
                 (ev) -> {
                     UDPClient.setConnectionAddress(FunkyLogs.serverIP, FunkyLogs.port);
-                }));
+                }, activeTab[0]);
+
+        tabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                activeTab[0] = newValue.getText();
+                VBox newSidebar = RightSidebar.getRightSidebar(getClass().getResource("logo.png"),
+                        getClass().getResource("exit.png"), primaryStage,
+                        (observable2, prev, value) -> {
+                            FunkyLogs.auto_scroll = value;
+                        },
+                        (observable2, prev, value) -> {
+                            FunkyLogs.serverIP = value;
+                        },
+                        (observable2, prev, value) -> {
+                            FunkyLogs.port = Integer.parseInt(value);
+                        },
+                        (ev) -> {
+                            UDPClient.setConnectionAddress(FunkyLogs.serverIP, FunkyLogs.port);
+                        }, activeTab[0]);
+                root.setRight(newSidebar);
+            }
+        });
+
+        root.setRight(sidebar);
 
         Scene scene = new Scene(root, Color.TRANSPARENT);
+        scene.getStylesheets().add(getClass().getResource("dark-theme.css").toExternalForm());
         primaryStage.initStyle(StageStyle.TRANSPARENT);
         primaryStage.setScene(scene);
         primaryStage.show();
