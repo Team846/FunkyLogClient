@@ -1,0 +1,111 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.13'
+}
+
+group = 'com.funkylogclient'
+version = '2.0.8'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'https://frcmaven.wpi.edu/artifactory/release/'
+    }
+}
+
+dependencies {
+    implementation 'org.openjfx:javafx-controls:17'
+    implementation 'org.openjfx:javafx-fxml:17'
+    
+    implementation 'edu.wpi.first.ntcore:ntcore-java:2025.3.2'
+    implementation 'edu.wpi.first.ntcore:ntcore-jni:2025.3.2:windowsx86-64'
+    implementation 'edu.wpi.first.wpiutil:wpiutil-java:2025.3.2'
+    implementation 'edu.wpi.first.wpiutil:wpiutil-jni:2025.3.2:windowsx86-64'
+    
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+}
+
+javafx {
+    version = '17'
+    modules = [ 'javafx.controls', 'javafx.fxml' ]
+}
+
+application {
+    mainClass = 'com.funkylogclient.Main'
+}
+
+run {
+    workingDir = projectDir
+    jvmArgs = [
+        '-Djava.library.path=' + new File(projectDir, 'build/libs/windows/x86-64').absolutePath,
+        '-Dwpiutil.debug=true',
+        '-Dwpiutil.nativelibdir=' + new File(projectDir, 'build/libs/windows/x86-64').absolutePath
+    ]
+}
+
+task unpackNativeLibs(type: Copy) {
+    doFirst {
+        def jniDeps = configurations.runtimeClasspath.filter { 
+            it.name.contains('jni')
+        }
+        if (jniDeps.empty) {
+            println "No JNI dependency found"
+        } else {
+            jniDeps.each { dep ->
+                println "Found JNI jar: ${dep.name}"
+            }
+        }
+    }
+    
+    from(configurations.runtimeClasspath.filter { 
+        it.name.contains('jni')
+    }.collect { zipTree(it) })
+    eachFile { println "Extracting: ${it.path}" }
+    include '**/*.dll'
+    include '**/*.so'
+    into 'build/libs'
+}
+
+tasks.named('startScripts').configure { 
+    dependsOn unpackNativeLibs 
+    mustRunAfter unpackNativeLibs 
+}
+
+tasks.named('distZip').configure { 
+    dependsOn unpackNativeLibs 
+    mustRunAfter unpackNativeLibs 
+}
+
+tasks.named('distTar').configure { 
+    dependsOn unpackNativeLibs 
+    mustRunAfter unpackNativeLibs 
+}
+
+run.dependsOn unpackNativeLibs
+build.dependsOn unpackNativeLibs
+
+jar {
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    manifest {
+        attributes 'Main-Class': 'com.funkylogclient.Main'
+    }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+clean {
+    delete 'build', 'target'
+}
+

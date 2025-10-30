@@ -1,4 +1,27 @@
-target
-target/classes/com/funkylogclient/Message.class
-pom.xml
-logs846
+# Gradle
+.gradle
+build/
+*.gradle.kts
+
+# Maven (old build system - can be kept for reference)
+target/
+.mvn/
+.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs846/
+hs_err_pid*.log

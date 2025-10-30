@@ -1,0 +1,140 @@
+/* Dark Theme CSS for FunkyLogs */
+
+.tab-pane {
+    -fx-background-color: #1A1A1A;
+    -fx-tab-header-background: #1A1A1A;
+    -fx-tab-header-area-background: #1A1A1A;
+    -fx-content-area-background: #1A1A1A;
+    -fx-control-inner-background: #1A1A1A;
+    -fx-background-insets: 0;
+    -fx-tab-area-background: #1A1A1A;
+    -fx-tab-header-area-spacing: 20px;
+}
+
+.tab-pane .tab-header-area {
+    -fx-background-color: #1A1A1A;
+    -fx-background-insets: 0;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #1A1A1A;
+}
+
+.tab-pane .tab-content-area {
+    -fx-background-color: #1A1A1A;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #404040;
+    -fx-background-insets: 0;
+    -fx-padding: 0px 2px;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #404040;
+    -fx-background-insets: 0;
+    -fx-padding: 0px 2px;
+}
+
+.tab-pane .tab:hover {
+    -fx-background-color: #505050;
+    -fx-padding: 0px 2px;
+}
+
+.tab-pane .tab:selected:hover {
+    -fx-background-color: #505050;
+    -fx-padding: 0px 2px;
+}
+
+.tab-pane .tab .tab-label {
+    -fx-text-fill: #E0E0E0;
+    -fx-font-size: 11px;
+    -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;
+    -fx-padding: 0px 2px;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #E0E0E0;
+}
+
+.tab-pane .tab:hover .tab-label {
+    -fx-text-fill: #FFFFFF;
+}
+
+.tab-pane .tab:selected:hover .tab-label {
+    -fx-text-fill: #FFFFFF;
+}
+
+.tab-pane .tab-header-area .headers-region {
+    -fx-background-color: #1A1A1A;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #1A1A1A;
+}
+
+.tab-pane .tab-header-area .tab-header-background .tab {
+    -fx-background-color: #404040;
+    -fx-padding: 0px 2px;
+}
+
+.tab-pane .tab-header-area .tab-header-background .tab:selected {
+    -fx-background-color: #404040;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0px 2px;
+}
+
+.tab-pane .tab-header-area .tab-header-background .tab:hover {
+    -fx-background-color: #505050;
+    -fx-padding: 0px 2px;
+}
+
+.tab-pane .tab-header-area .tab-header-background .tab:selected:hover {
+    -fx-background-color: #505050;
+    -fx-padding: 0px 2px;
+}
+
+/* TextField placeholder text styling */
+.text-field {
+    -fx-prompt-text-fill: #FFFFFF;
+}
+
+.text-field:focused {
+    -fx-prompt-text-fill: #FFFFFF;
+}
+
+/* Remove any blue tints from JavaFX components */
+.root {
+    -fx-background-color: #1A1A1A;
+}
+
+.border-pane {
+    -fx-background-color: #1A1A1A;
+}
+
+.vbox {
+    -fx-background-color: #1A1A1A;
+}
+
+.hbox {
+    -fx-background-color: #1A1A1A;
+}
+
+.scroll-pane {
+    -fx-background-color: #1A1A1A;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: #1A1A1A;
+}
+
+.scroll-pane .content {
+    -fx-background-color: #1A1A1A;
+}
+
+/* Remove focus colors that might have blue tints */
+* {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}

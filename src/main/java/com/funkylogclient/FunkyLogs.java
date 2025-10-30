@@ -25,7 +25,7 @@ import javafx.scene.Cursor;
 
 public class FunkyLogs extends Application {
 
-    public static final String APP_NAME = "FunkyLogs v1.1.4";
+    public static final String APP_NAME = "FunkyLogs v2.0.8";
 
     private BorderPane root;
 

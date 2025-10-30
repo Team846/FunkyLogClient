@@ -32,13 +32,14 @@ public class RightSidebar {
                 sidebarContent.getChildren().add(title);
 
                 if ("Dashboard".equals(activeTab)) {
-                        sidebarContent.getChildren().addAll(SidebarNetworkTablesSettings.getSidebarNetworkTablesSettings(
-                                        (ev) -> {
-                                                NetworkTablesClient.connect();
-                                        },
-                                        (ev) -> {
-                                                NetworkTablesClient.disconnect();
-                                        }));
+                        sidebarContent.getChildren()
+                                        .addAll(SidebarNetworkTablesSettings.getSidebarNetworkTablesSettings(
+                                                        (ev) -> {
+                                                                NetworkTablesClient.connect();
+                                                        },
+                                                        (ev) -> {
+                                                                NetworkTablesClient.disconnect();
+                                                        }));
 
                         sidebarContent.getChildren().addAll(SidebarNetworkTablesChooser.getNetworkTablesChooser());
 
@@ -76,7 +77,8 @@ public class RightSidebar {
                                                         primaryStage));
 
                         sidebarContent.getChildren()
-                                        .addAll(SidebarNetworkSettings.getSidebarNetworkSettings(addrFieldChangeListener,
+                                        .addAll(SidebarNetworkSettings.getSidebarNetworkSettings(
+                                                        addrFieldChangeListener,
                                                         portFieldChangeListener, confirmButtonListener));
                 }
 
@@ -91,9 +93,15 @@ public class RightSidebar {
                 VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
                 VBox rightSidebar = new VBox();
-                rightSidebar.setMinWidth(180);
-                rightSidebar.setPrefWidth(220);
-                rightSidebar.setMaxWidth(280);
+                if ("Dashboard".equals(activeTab)) {
+                    rightSidebar.setMinWidth(240);
+                    rightSidebar.setPrefWidth(280);
+                    rightSidebar.setMaxWidth(400);
+                } else {
+                    rightSidebar.setMinWidth(180);
+                    rightSidebar.setPrefWidth(220);
+                    rightSidebar.setMaxWidth(280);
+                }
                 rightSidebar.setStyle(Styles.RIGHT_SIDEBAR_STYLE);
                 rightSidebar.getChildren().add(scrollPane);
 
