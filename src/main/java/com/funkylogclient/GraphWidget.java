@@ -48,15 +48,16 @@ public class GraphWidget extends DashboardWidget {
 
     private void createGraph() {
         contentBox.setStyle("-fx-background-color: transparent; -fx-background-radius: 0 0 8 8;");
+        contentBox.setPadding(new javafx.geometry.Insets(0));
 
         canvas = new Canvas();
         canvas.setWidth(280);
-        canvas.setHeight(140);
+        canvas.setHeight(190);
         gc = canvas.getGraphicsContext2D();
         data = new ArrayList<>();
 
         chartPane = new StackPane();
-        chartPane.setMinHeight(120);
+        chartPane.setMinHeight(190);
         chartPane.setMinWidth(200);
         chartPane.getChildren().add(canvas);
         canvas.widthProperty().bind(chartPane.widthProperty());
@@ -75,6 +76,8 @@ public class GraphWidget extends DashboardWidget {
         double height = canvas.getHeight();
 
         gc.clearRect(0, 0, width, height);
+        gc.setFill(Color.web("#21262D"));
+        gc.fillRect(0, 0, width, height);
 
         double currentTime = (System.currentTimeMillis() - startTime) / 1000.0;
         double oldestTime = Math.max(0, currentTime - timeFrame);
@@ -91,23 +94,25 @@ public class GraphWidget extends DashboardWidget {
 
         if (autoScale) {
             double range = maxY - minY;
-            double padding = range * 0.1;
+            double padding = range * 0.02;
             if (range == 0) {
-                padding = Math.abs(Math.min(minY, maxY)) * 0.1 + 1.0;
+                padding = 1.0;
             }
             yMin = minY - padding;
             yMax = maxY + padding;
         }
 
-        double leftPadding = 30;
-        double bottomPadding = 14;
-        double rightPadding = 10;
-        double topPadding = 8;
+        double leftPadding = 41;
+        double rightPadding = 14;
+        double fontSize = 10.0;
+        double labelHeight = fontSize * 1.5;
+        double bottomPadding = labelHeight + 4;
+        double topPadding = labelHeight / 2 + 4;
 
         double chartWidth = width - leftPadding - rightPadding;
         double chartHeight = height - bottomPadding - topPadding;
 
-        gc.setStroke(Color.web("#21262D"));
+        gc.setStroke(Color.web("#30363D"));
         gc.setLineWidth(1);
 
         for (int i = 0; i <= 4; i++) {
@@ -120,7 +125,7 @@ public class GraphWidget extends DashboardWidget {
             gc.strokeLine(x, topPadding, x, height - bottomPadding);
         }
 
-        gc.setFill(Color.web("#8B949E"));
+        gc.setFill(Color.web("#C9D1D9"));
         gc.setFont(new Font(10));
 
         for (int i = 0; i <= 4; i++) {
@@ -136,8 +141,6 @@ public class GraphWidget extends DashboardWidget {
             gc.setTextAlign(TextAlignment.CENTER);
             gc.fillText(String.format("%.1f", time), x, height - 5);
         }
-
-        // Omit axis titles to maximize plotting area
 
         if (!visibleData.isEmpty()) {
             gc.setStroke(Color.web("#FF8C00"));

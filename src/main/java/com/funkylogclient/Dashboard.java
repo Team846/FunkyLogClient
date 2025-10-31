@@ -64,7 +64,6 @@ public class Dashboard {
         widgetGrid.setMinSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
         widgetGrid.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        // Set fixed column widths
         for (int i = 0; i < 4; i++) {
             ColumnConstraints colConstraints = new ColumnConstraints();
             colConstraints.setMinWidth(200);
@@ -118,7 +117,6 @@ public class Dashboard {
         Platform.runLater(() -> {
             widgetGrid.getChildren().clear();
 
-            // Add widgets at their stored positions
             for (Map.Entry<String, DashboardWidget> entry : widgets.entrySet()) {
                 String key = entry.getKey();
                 DashboardWidget widget = entry.getValue();
@@ -137,10 +135,10 @@ public class Dashboard {
                     } else {
                         widgetGrid.add(widget.getContainer(), pos.col, pos.row);
                     }
+                    setupWidgetDragAndDrop(widget.getContainer(), key);
                 }
             }
 
-            // Ensure enough row constraints exist
             int maxRow = 0;
             for (GridPosition pos : widgetPositions.values()) {
                 if (pos.row > maxRow) {
@@ -317,19 +315,38 @@ public class Dashboard {
                         .println("Calculated grid position: col=" + targetPosition.col + ", row=" + targetPosition.row);
 
                 try {
-                    // Check if this is a widget move operation
                     if (data.startsWith("MOVE:")) {
-                        String widgetKey = data.substring(5); // Remove "MOVE:" prefix
+                        String widgetKey = data.substring(5);
                         System.out.println("Moving widget: " + widgetKey);
 
                         if (widgets.containsKey(widgetKey)) {
-                            // Update the position of the existing widget
-                            widgetPositions.put(widgetKey, targetPosition);
+                            DashboardWidget w = widgets.get(widgetKey);
+                            GridPosition newPos = targetPosition;
+                            if (w instanceof GraphWidget) {
+                                int clampedCol = Math.max(0, Math.min(targetPosition.col, 4 - 2));
+                                newPos = new GridPosition(clampedCol, targetPosition.row);
+                                java.util.List<String> toRemove = new java.util.ArrayList<>();
+                                for (Map.Entry<String, GridPosition> e : widgetPositions.entrySet()) {
+                                    String otherKey = e.getKey();
+                                    if (otherKey.equals(widgetKey))
+                                        continue;
+                                    GridPosition p = e.getValue();
+                                    if (p.row >= newPos.row && p.row < newPos.row + 2 && p.col >= newPos.col
+                                            && p.col < newPos.col + 2) {
+                                        toRemove.add(otherKey);
+                                    }
+                                }
+                                for (String k : toRemove) {
+                                    widgets.remove(k);
+                                    widgetPositions.remove(k);
+                                    lastUpdateTime.remove(k);
+                                }
+                            }
+                            widgetPositions.put(widgetKey, newPos);
                             updateWidgetGrid();
                             success = true;
                         }
                     } else {
-                        // This is a new widget from the sidebar
                         String key = data;
                         NetworkTableInstance instance = NetworkTablesClient.getInstance();
                         if (instance == null) {
@@ -388,7 +405,6 @@ public class Dashboard {
                         }
 
                         if (widget != null) {
-                            // Set the target position for the new widget
                             widgetPositions.put(widget.getKey(), targetPosition);
                             addWidgetToGrid(widget);
                             success = true;
@@ -539,12 +555,10 @@ public class Dashboard {
         String key = widget.getKey();
         System.out.println("AWG: Adding widget to grid: " + key);
 
-        // Only add to widgets map if not already there
         if (!widgets.containsKey(key)) {
             widgets.put(key, widget);
         }
 
-        // Set initial position if not already set
         if (!widgetPositions.containsKey(key)) {
             widgetPositions.put(key, findNextAvailablePosition());
         }
@@ -594,8 +608,6 @@ public class Dashboard {
             event.consume();
         });
     }
-
-    // removed: widget-level context menu injection handled inside widgets
 
     private void removeWidget(String key) {
         widgets.remove(key);
