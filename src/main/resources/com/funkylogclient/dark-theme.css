@@ -1,5 +1,3 @@
-/* Dark Theme CSS for FunkyLogs */
-
 .tab-pane {
     -fx-background-color: #1A1A1A;
     -fx-tab-header-background: #1A1A1A;
@@ -95,7 +93,6 @@
     -fx-padding: 0px 2px;
 }
 
-/* TextField placeholder text styling */
 .text-field {
     -fx-prompt-text-fill: #FFFFFF;
 }
@@ -104,7 +101,6 @@
     -fx-prompt-text-fill: #FFFFFF;
 }
 
-/* Remove any blue tints from JavaFX components */
 .root {
     -fx-background-color: #1A1A1A;
 }
@@ -133,8 +129,61 @@
     -fx-background-color: #1A1A1A;
 }
 
-/* Remove focus colors that might have blue tints */
 * {
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
+}
+
+.combo-box {
+    -fx-background-color: #30363D;
+}
+
+.combo-box > .list-cell {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;
+    -fx-text-fill: #C9D1D9;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: #21262D;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0 6px 6px 0;
+}
+
+.combo-box .arrow-button:hover {
+    -fx-background-color: #30363D;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #C9D1D9;
+}
+
+.combo-box .list-view {
+    -fx-background-color: #21262D;
+    -fx-border-color: #454D56;
+    -fx-border-width: 2px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.combo-box .list-view .list-cell {
+    -fx-background-color: #21262D;
+    -fx-text-fill: #C9D1D9;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;
+    -fx-padding: 8px 12px;
+}
+
+.combo-box .list-view .list-cell:hover {
+    -fx-background-color: #30363D;
+    -fx-text-fill: #E0E0E0;
+}
+
+.combo-box .list-view .list-cell:selected {
+    -fx-background-color: #238636;
+    -fx-text-fill: white;
 }

@@ -34,6 +34,8 @@ public class SidebarNetworkTablesChooser {
     private static TextField searchField;
     private static Map<String, NetworkTableEntry> entries = new HashMap<>();
     private static Map<TreeItem<String>, String> itemToKeyMap = new HashMap<>();
+    private static Set<String> sendableChooserPaths = new HashSet<>();
+    private static Set<String> fieldPaths = new HashSet<>();
 
     public static ArrayList<javafx.scene.Node> getNetworkTablesChooser() {
         ArrayList<javafx.scene.Node> chooserElements = new ArrayList<>();
@@ -89,8 +91,23 @@ public class SidebarNetworkTablesChooser {
                     boolean isEntry = item != null && item.contains(" = ") &&
                             !item.equals("NetworkTables") && !item.equals("Not Connected");
 
+                    boolean isChooser = false;
+                    boolean isField = false;
+                    if (!isEntry) {
+                        TreeItem<String> treeItem = getTreeItem();
+                        if (treeItem != null) {
+                            String fullPath = buildFullPath(treeItem);
+                            isChooser = sendableChooserPaths.contains(fullPath);
+                            isField = fieldPaths.contains(fullPath);
+                        }
+                    }
+
                     if (isEntry) {
                         setStyle("-fx-text-fill: #4A9EFF; -fx-font-weight: normal;");
+                    } else if (isChooser) {
+                        setStyle("-fx-text-fill: #FF8C00; -fx-font-weight: bold;");
+                    } else if (isField) {
+                        setStyle("-fx-text-fill: #238636; -fx-font-weight: bold;");
                     } else {
                         setStyle("-fx-text-fill: #C9D1D9; -fx-font-weight: normal;");
                     }
@@ -272,6 +289,13 @@ public class SidebarNetworkTablesChooser {
                                 String[] tableRoots = { "SmartDashboard", "Shuffleboard", "LiveWindow",
                                         "FMSInfo", "Preferences" };
 
+                                Set<String> newChooserPaths = new HashSet<>();
+                                Set<String> newFieldPaths = new HashSet<>();
+                                synchronized (SidebarNetworkTablesChooser.class) {
+                                    sendableChooserPaths = newChooserPaths;
+                                    fieldPaths = newFieldPaths;
+                                }
+
                                 for (String tableRoot : tableRoots) {
                                     NetworkTable table = instance.getTable(tableRoot);
                                     fetchEntriesRecursive(table, tableRoot, newEntries);
@@ -326,7 +350,7 @@ public class SidebarNetworkTablesChooser {
                 String displayValue = selectedItem.getValue();
 
                 synchronized (SidebarNetworkTablesChooser.class) {
-                    if (key != null && entries.containsKey(key)) {
+                    if (key != null) {
                         Dragboard dragboard = networkTablesTree.startDragAndDrop(TransferMode.COPY);
                         ClipboardContent content = new ClipboardContent();
                         content.putString(key);
@@ -352,8 +376,7 @@ public class SidebarNetworkTablesChooser {
                         System.out.println("Dragging key: " + key);
                         event.consume();
                     } else {
-                        System.out.println("Cannot drag - key: " + key + ", in entries: "
-                                + (key != null && entries.containsKey(key)));
+                        System.out.println("Cannot drag - key: " + key);
                     }
                 }
             }
@@ -387,7 +410,14 @@ public class SidebarNetworkTablesChooser {
 
         String fullPath = path.toString();
         synchronized (SidebarNetworkTablesChooser.class) {
-            return entries.containsKey(fullPath) ? fullPath : null;
+            if (entries.containsKey(fullPath)) {
+                return fullPath;
+            } else if (sendableChooserPaths.contains(fullPath)) {
+                return fullPath + "/active";
+            } else if (fieldPaths.contains(fullPath)) {
+                return fullPath;
+            }
+            return null;
         }
     }
 
@@ -437,8 +467,35 @@ public class SidebarNetworkTablesChooser {
                 return;
             }
 
+            boolean hasActive = false;
+            boolean hasOptions = false;
+            boolean hasRobot = false;
+            boolean hasType = false;
+            boolean hasPoseField = false;
             try {
                 var keys = table.getKeys();
+                for (String key : keys) {
+                    if (key.equals("active")) {
+                        hasActive = true;
+                    } else if (key.equals("options")) {
+                        hasOptions = true;
+                    } else if (key.equals("robot") || key.contains("Robot")) {
+                        hasRobot = true;
+                    } else if (key.equals(".type")) {
+                        hasType = true;
+                    } else if (key.contains("Pose") || key.contains("Field")) {
+                        hasPoseField = true;
+                    }
+                }
+
+                if (hasActive && hasOptions) {
+                    sendableChooserPaths.add(prefix);
+                }
+
+                if (hasRobot || (hasType && hasPoseField)) {
+                    fieldPaths.add(prefix);
+                }
+
                 for (String key : keys) {
                     String fullKey = prefix + "/" + key;
                     NetworkTableEntry entry = table.getEntry(key);
@@ -461,5 +518,28 @@ public class SidebarNetworkTablesChooser {
         } catch (Exception e) {
             System.err.println("Error fetching entries recursively at prefix " + prefix + ": " + e.getMessage());
         }
+    }
+
+    private static String buildFullPath(TreeItem<String> item) {
+        if (item == null || item.getValue().equals("NetworkTables")) {
+            return "";
+        }
+
+        StringBuilder path = new StringBuilder();
+        TreeItem<String> current = item;
+
+        while (current != null && !current.getValue().equals("NetworkTables")) {
+            String value = current.getValue();
+            int equalsIndex = value.indexOf(" = ");
+            String partName = equalsIndex >= 0 ? value.substring(0, equalsIndex) : value;
+
+            if (path.length() > 0) {
+                path.insert(0, "/");
+            }
+            path.insert(0, partName);
+            current = current.getParent();
+        }
+
+        return path.toString();
     }
 }

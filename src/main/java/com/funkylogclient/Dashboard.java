@@ -7,6 +7,8 @@ import edu.wpi.first.networktables.NetworkTableValue;
 import edu.wpi.first.networktables.NetworkTableType;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.layout.*;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Text;
@@ -15,11 +17,18 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.input.ClipboardContent;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Dashboard {
     private VBox dashboardContainer;
@@ -41,9 +50,43 @@ public class Dashboard {
         }
     }
 
+    // Configuration classes for serialization
+    private static class WidgetConfig {
+        @JsonProperty
+        public String key;
+        @JsonProperty
+        public String type;
+        @JsonProperty
+        public String title;
+        @JsonProperty
+        public int col;
+        @JsonProperty
+        public int row;
+
+        public WidgetConfig() {
+        }
+
+        public WidgetConfig(String key, String type, String title, int col, int row) {
+            this.key = key;
+            this.type = type;
+            this.title = title;
+            this.col = col;
+            this.row = row;
+        }
+    }
+
+    private static class DashboardConfig {
+        @JsonProperty
+        public List<WidgetConfig> widgets = new ArrayList<>();
+
+        public DashboardConfig() {
+        }
+    }
+
     public Dashboard() {
         widgets = new HashMap<>();
         createDashboard();
+        loadConfiguration();
         startValueUpdateLoop();
     }
 
@@ -52,9 +95,19 @@ public class Dashboard {
         dashboardContainer.setPadding(new Insets(15, 20, 20, 20));
         dashboardContainer.setStyle("-fx-background-color: #1A1A1A;");
 
+        HBox titleBar = new HBox(10);
+        titleBar.setAlignment(Pos.CENTER_LEFT);
+
         Text title = new Text("Dashboard");
         title.setStyle(
                 "-fx-font-size: 24px; -fx-fill: #C9D1D9; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+
+        HBox simControls = createSimulationControls();
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        titleBar.getChildren().addAll(title, spacer, simControls);
 
         widgetGrid = new GridPane();
         widgetGrid.setHgap(15);
@@ -84,8 +137,232 @@ public class Dashboard {
         VBox.setVgrow(widgetGrid, Priority.ALWAYS);
         setupDragAndDrop(widgetGrid);
 
-        dashboardContainer.getChildren().addAll(title, widgetGrid);
+        dashboardContainer.getChildren().addAll(titleBar, widgetGrid);
 
+    }
+
+    private HBox createSimulationControls() {
+        HBox controls = new HBox(5);
+        controls.setAlignment(Pos.CENTER);
+        controls.setVisible(false);
+        controls.setManaged(false);
+
+        String[] modes = { "Disabled", "Teleop", "Auto", "Test" };
+        Button[] buttons = new Button[4];
+        String[] currentMode = { null };
+
+        updateControlsVisibility(controls);
+
+        for (int i = 0; i < modes.length; i++) {
+            final String mode = modes[i];
+            Button btn = new Button(mode);
+
+            String baseStyle = "-fx-font-size: 11px; " +
+                    "-fx-font-weight: bold; " +
+                    "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                    "-fx-text-fill: #FFFFFF; " +
+                    "-fx-background-color: #FF8C00; " +
+                    "-fx-border-color: #FF8C00; " +
+                    "-fx-border-width: 1px; " +
+                    "-fx-border-radius: 4px; " +
+                    "-fx-background-radius: 4px; " +
+                    "-fx-padding: 4px 8px; " +
+                    "-fx-cursor: hand;";
+
+            btn.setStyle(baseStyle);
+            btn.setMinWidth(70);
+            btn.setPrefWidth(70);
+            btn.setMaxWidth(70);
+
+            btn.setOnAction(e -> {
+                setSimulationMode(mode.toLowerCase());
+                currentMode[0] = mode.toLowerCase();
+
+                for (Button b : buttons) {
+                    if (b != null) {
+                        b.setStyle(baseStyle);
+                    }
+                }
+
+                String activeStyle = "-fx-font-size: 11px; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-background-color: #FFB84D; " +
+                        "-fx-border-color: #FFB84D; " +
+                        "-fx-border-width: 1px; " +
+                        "-fx-border-radius: 4px; " +
+                        "-fx-background-radius: 4px; " +
+                        "-fx-padding: 4px 8px; " +
+                        "-fx-cursor: hand;";
+                btn.setStyle(activeStyle);
+            });
+
+            btn.setOnMouseEntered(e -> {
+                if (!mode.toLowerCase().equals(currentMode[0])) {
+                    btn.setStyle("-fx-font-size: 11px; " +
+                            "-fx-font-weight: bold; " +
+                            "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-text-fill: #FFFFFF; " +
+                            "-fx-background-color: #FFA500; " +
+                            "-fx-border-color: #FFA500; " +
+                            "-fx-border-width: 1px; " +
+                            "-fx-border-radius: 4px; " +
+                            "-fx-background-radius: 4px; " +
+                            "-fx-padding: 4px 8px; " +
+                            "-fx-cursor: hand;");
+                }
+            });
+
+            btn.setOnMouseExited(e -> {
+                if (!mode.toLowerCase().equals(currentMode[0])) {
+                    btn.setStyle(baseStyle);
+                }
+            });
+
+            buttons[i] = btn;
+            controls.getChildren().add(btn);
+        }
+
+        updateSimulationButtons(buttons, currentMode, controls);
+
+        ScheduledExecutorService visibilityExecutor = Executors.newSingleThreadScheduledExecutor();
+        visibilityExecutor.scheduleAtFixedRate(() -> {
+            updateControlsVisibility(controls);
+        }, 0, 500, TimeUnit.MILLISECONDS);
+
+        return controls;
+    }
+
+    private void updateControlsVisibility(HBox controls) {
+        String currentIP = UDPClient.serverIP;
+        boolean isLocalhost = currentIP.equals("127.0.0.1") || currentIP.equals("localhost");
+
+        Platform.runLater(() -> {
+            controls.setVisible(isLocalhost);
+            controls.setManaged(isLocalhost);
+        });
+    }
+
+    private void setSimulationMode(String mode) {
+        try {
+            NetworkTableInstance instance = NetworkTableInstance.getDefault();
+            if (instance == null) {
+                return;
+            }
+
+            int modeValue = 0;
+            if (mode.equals("disabled")) {
+                modeValue = 0;
+            } else if (mode.equals("teleop")) {
+                modeValue = 1;
+            } else if (mode.equals("auto")) {
+                modeValue = 2;
+            } else if (mode.equals("test")) {
+                modeValue = 3;
+            }
+
+            NetworkTable funkyFMSTable = instance.getTable("FunkyFMS");
+            if (funkyFMSTable != null) {
+                NetworkTableEntry controlModeEntry = funkyFMSTable.getEntry("controlMode");
+                controlModeEntry.setInteger(modeValue);
+                instance.flush();
+            }
+        } catch (Exception e) {
+            System.err.println("Error setting simulation mode: " + e.getMessage());
+        }
+    }
+
+    private void updateSimulationButtons(Button[] buttons, String[] currentMode, HBox controls) {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+        executor.scheduleAtFixedRate(() -> {
+            try {
+                String currentIP = UDPClient.serverIP;
+                boolean isLocalhost = currentIP.equals("127.0.0.1") || currentIP.equals("localhost");
+
+                if (!isLocalhost) {
+                    Platform.runLater(() -> {
+                        controls.setVisible(false);
+                        controls.setManaged(false);
+                    });
+                    return;
+                }
+
+                Platform.runLater(() -> {
+                    controls.setVisible(true);
+                    controls.setManaged(true);
+                });
+
+                NetworkTableInstance instance = NetworkTableInstance.getDefault();
+                if (instance == null || !NetworkTablesClient.isConnected()) {
+                    return;
+                }
+
+                NetworkTable fmsTable = instance.getTable("FMSInfo");
+                if (fmsTable == null) {
+                    return;
+                }
+
+                NetworkTableEntry fmsControlDataEntry = fmsTable.getEntry("FMSControlData");
+                String mode = "disabled";
+
+                if (fmsControlDataEntry != null && fmsControlDataEntry.exists()) {
+                    Number modeValueNumber = fmsControlDataEntry.getNumber(32.0);
+                    int modeValue = modeValueNumber.intValue();
+
+                    if (modeValue == 32) {
+                        mode = "disabled";
+                    } else if (modeValue == 35) {
+                        mode = "auto";
+                    } else if (modeValue == 33) {
+                        mode = "teleop";
+                    } else if (modeValue == 37) {
+                        mode = "test";
+                    }
+                }
+
+                final String finalMode = mode;
+                Platform.runLater(() -> {
+                    String baseStyle = "-fx-font-size: 11px; " +
+                            "-fx-font-weight: bold; " +
+                            "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-text-fill: #FFFFFF; " +
+                            "-fx-background-color: #FF8C00; " +
+                            "-fx-border-color: #FF8C00; " +
+                            "-fx-border-width: 1px; " +
+                            "-fx-border-radius: 4px; " +
+                            "-fx-background-radius: 4px; " +
+                            "-fx-padding: 4px 8px; " +
+                            "-fx-cursor: hand;";
+
+                    String activeStyle = "-fx-font-size: 11px; " +
+                            "-fx-font-weight: bold; " +
+                            "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-text-fill: #000000; " +
+                            "-fx-background-color: #FFB84D; " +
+                            "-fx-border-color: #FFB84D; " +
+                            "-fx-border-width: 1px; " +
+                            "-fx-border-radius: 4px; " +
+                            "-fx-background-radius: 4px; " +
+                            "-fx-padding: 4px 8px; " +
+                            "-fx-cursor: hand;";
+
+                    String[] modes = { "disabled", "teleop", "auto", "test" };
+                    for (int i = 0; i < buttons.length; i++) {
+                        if (buttons[i] != null) {
+                            if (modes[i].equals(finalMode)) {
+                                buttons[i].setStyle(activeStyle);
+                                currentMode[0] = finalMode;
+                            } else {
+                                buttons[i].setStyle(baseStyle);
+                            }
+                        }
+                    }
+                });
+            } catch (Exception e) {
+            }
+        }, 0, 2000, TimeUnit.MILLISECONDS);
     }
 
     private void addWidget(String title, String type, Double min, Double max, String unit) {
@@ -131,6 +408,14 @@ public class Dashboard {
                     if (widget instanceof GraphWidget) {
                         int spanCols = Math.min(2, 4 - pos.col);
                         int spanRows = 2;
+                        widgetGrid.add(widget.getContainer(), pos.col, pos.row, spanCols, spanRows);
+                    } else if (widget instanceof FieldViewWidget) {
+                        int spanCols = Math.min(3, 4 - pos.col);
+                        int spanRows = 2;
+                        widgetGrid.add(widget.getContainer(), pos.col, pos.row, spanCols, spanRows);
+                    } else if (widget instanceof AutoSelectorWidget) {
+                        int spanCols = Math.min(2, 4 - pos.col);
+                        int spanRows = 1;
                         widgetGrid.add(widget.getContainer(), pos.col, pos.row, spanCols, spanRows);
                     } else {
                         widgetGrid.add(widget.getContainer(), pos.col, pos.row);
@@ -179,6 +464,23 @@ public class Dashboard {
                         if (rr >= 0 && rr < rowsToFill && cc >= 0 && cc < maxCols) {
                             occupied[rr][cc] = true;
                         }
+                    }
+                }
+            } else if (widget instanceof FieldViewWidget) {
+                for (int r = 0; r < 2; r++) {
+                    for (int c = 0; c < 3; c++) {
+                        int rr = pos.row + r;
+                        int cc = pos.col + c;
+                        if (rr >= 0 && rr < rowsToFill && cc >= 0 && cc < maxCols) {
+                            occupied[rr][cc] = true;
+                        }
+                    }
+                }
+            } else if (widget instanceof AutoSelectorWidget) {
+                for (int c = 0; c < 2; c++) {
+                    int cc = pos.col + c;
+                    if (pos.row >= 0 && pos.row < rowsToFill && cc >= 0 && cc < maxCols) {
+                        occupied[pos.row][cc] = true;
                     }
                 }
             } else {
@@ -230,6 +532,8 @@ public class Dashboard {
                     long updateInterval;
                     if (widget instanceof GraphWidget) {
                         updateInterval = 100;
+                    } else if (widget instanceof FieldViewWidget) {
+                        updateInterval = 50;
                     } else if (widget instanceof NumberWidget) {
                         updateInterval = 200;
                     } else {
@@ -248,19 +552,51 @@ public class Dashboard {
                             continue;
                         }
 
-                        NetworkTableEntry ntEntry = table.getEntry(key.substring(tableName.length() + 1));
+                        String entryKey = key.substring(tableName.length() + 1);
 
-                        if (ntEntry.exists()) {
-                            NetworkTableValue ntValue = ntEntry.getValue();
-                            if (ntValue != null) {
-                                Object value = ntValue.getValue();
-                                if (value != null) {
-                                    Platform.runLater(() -> widget.updateValue(value));
-                                    lastUpdateTime.put(key, currentTime);
+                        if (widget instanceof AutoSelectorWidget) {
+                            NetworkTable chooserTable = table.getSubTable(entryKey);
+                            NetworkTableEntry activeEntry = chooserTable.getEntry("active");
+                            if (activeEntry.exists()) {
+                                NetworkTableValue ntValue = activeEntry.getValue();
+                                if (ntValue != null) {
+                                    Object value = ntValue.getValue();
+                                    if (value != null) {
+                                        if (timeSinceUpdate >= 500) {
+                                            Platform.runLater(() -> widget.updateValue(value));
+                                            lastUpdateTime.put(key, currentTime);
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (widget instanceof FieldViewWidget) {
+                            NetworkTable fieldTable = table.getSubTable(entryKey);
+                            NetworkTableEntry robotEntry = fieldTable.getEntry("Robot");
+                            if (robotEntry.exists()) {
+                                NetworkTableValue ntValue = robotEntry.getValue();
+                                if (ntValue != null) {
+                                    Object value = ntValue.getValue();
+                                    if (value != null) {
+                                        Platform.runLater(() -> widget.updateValue(value));
+                                        lastUpdateTime.put(key, currentTime);
+                                    }
                                 }
                             }
                         } else {
-                            // Entry missing; skip without logging each loop
+                            NetworkTableEntry ntEntry = table.getEntry(entryKey);
+
+                            if (ntEntry.exists()) {
+                                NetworkTableValue ntValue = ntEntry.getValue();
+                                if (ntValue != null) {
+                                    Object value = ntValue.getValue();
+                                    if (value != null) {
+                                        Platform.runLater(() -> widget.updateValue(value));
+                                        lastUpdateTime.put(key, currentTime);
+                                    }
+                                }
+                            } else {
+                                // Entry missing; skip without logging each loop
+                            }
                         }
                     } catch (Exception e) {
                         System.err.println("Error updating widget " + key + ": " + e.getMessage());
@@ -275,9 +611,177 @@ public class Dashboard {
     }
 
     public void shutdown() {
+        saveConfiguration();
+        for (DashboardWidget widget : widgets.values()) {
+            if (widget instanceof AutoSelectorWidget) {
+                ((AutoSelectorWidget) widget).shutdown();
+            }
+        }
         if (updateExecutor != null && !updateExecutor.isShutdown()) {
             updateExecutor.shutdown();
         }
+    }
+
+    private void saveConfiguration() {
+        try {
+            DashboardConfig config = new DashboardConfig();
+
+            for (Map.Entry<String, DashboardWidget> entry : widgets.entrySet()) {
+                String key = entry.getKey();
+                DashboardWidget widget = entry.getValue();
+                GridPosition pos = widgetPositions.get(key);
+
+                if (pos != null) {
+                    String widgetType = getWidgetType(widget);
+                    WidgetConfig widgetConfig = new WidgetConfig(
+                            key,
+                            widgetType,
+                            widget.getTitle(),
+                            pos.col,
+                            pos.row);
+                    config.widgets.add(widgetConfig);
+                }
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            File configFile = new File("dash.conf846");
+            mapper.writerWithDefaultPrettyPrinter().writeValue(configFile, config);
+            System.out.println("Dashboard configuration saved to dash.conf846");
+        } catch (IOException e) {
+            System.err.println("Failed to save dashboard configuration: " + e.getMessage());
+        }
+    }
+
+    private void loadConfiguration() {
+        try {
+            File configFile = new File("dash.conf846");
+            if (!configFile.exists()) {
+                System.out.println("No dashboard configuration found, starting with empty dashboard");
+                return;
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            DashboardConfig config = mapper.readValue(configFile, DashboardConfig.class);
+
+            System.out.println("Loading dashboard configuration from dash.conf846");
+
+            // Store config widgets to load them when NetworkTables connects
+            final List<WidgetConfig> widgetsToLoad = new ArrayList<>(config.widgets);
+
+            // Try to load immediately if NetworkTables is connected
+            loadConfigWidgets(widgetsToLoad);
+
+            // Schedule periodic retries in case NetworkTables connects later
+            // Use a separate scheduled task since updateExecutor might not be initialized
+            // yet
+            ScheduledExecutorService loadExecutor = Executors.newSingleThreadScheduledExecutor();
+            loadExecutor.scheduleAtFixedRate(() -> {
+                if (widgetsToLoad.isEmpty()) {
+                    loadExecutor.shutdown();
+                    return;
+                }
+                if (NetworkTablesClient.isConnected()) {
+                    loadConfigWidgets(widgetsToLoad);
+                }
+                // Stop retrying after 60 seconds to avoid infinite retries
+            }, 1, 2, TimeUnit.SECONDS);
+
+            // Stop the loader executor after 60 seconds as a safety measure
+            loadExecutor.schedule(() -> {
+                if (!loadExecutor.isShutdown()) {
+                    loadExecutor.shutdown();
+                }
+            }, 60, TimeUnit.SECONDS);
+
+            System.out.println("Dashboard configuration loaded successfully");
+        } catch (IOException e) {
+            System.err.println("Failed to load dashboard configuration: " + e.getMessage());
+        }
+    }
+
+    private void loadConfigWidgets(List<WidgetConfig> widgetsToLoad) {
+        List<WidgetConfig> toRemove = new ArrayList<>();
+
+        synchronized (widgetsToLoad) {
+            for (WidgetConfig widgetConfig : widgetsToLoad) {
+                // Skip if already loaded
+                if (widgets.containsKey(widgetConfig.key)) {
+                    toRemove.add(widgetConfig);
+                    continue;
+                }
+
+                // Only load if the NetworkTable entry exists
+                try {
+                    NetworkTableInstance instance = NetworkTablesClient.getInstance();
+                    if (instance != null) {
+                        String firstSegment = widgetConfig.key.split("/")[0];
+                        NetworkTable table = instance.getTable(firstSegment);
+
+                        if (table != null) {
+                            String entryKey = widgetConfig.key.substring(firstSegment.length() + 1);
+                            NetworkTableEntry entry = table.getEntry(entryKey);
+
+                            // Check if entry exists or if it's a subtable
+                            boolean entryExists = entry.exists();
+                            boolean subTableExists = table.getSubTable(entryKey) != null;
+
+                            if (entryExists || subTableExists) {
+                                DashboardWidget widget = createWidgetFromType(
+                                        widgetConfig.type,
+                                        widgetConfig.key,
+                                        null);
+
+                                if (widget != null) {
+                                    widgets.put(widgetConfig.key, widget);
+                                    widgetPositions.put(widgetConfig.key,
+                                            new GridPosition(widgetConfig.col, widgetConfig.row));
+
+                                    if (widget instanceof NumberWidget) {
+                                        ((NumberWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                                    } else if (widget instanceof GraphWidget) {
+                                        ((GraphWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                                    } else if (widget instanceof FieldViewWidget) {
+                                        ((FieldViewWidget) widget)
+                                                .setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                                    } else if (widget instanceof AutoSelectorWidget) {
+                                        ((AutoSelectorWidget) widget)
+                                                .setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                                    }
+
+                                    setupWidgetDragAndDrop(widget.getContainer(), widgetConfig.key);
+                                    toRemove.add(widgetConfig);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Entry might not exist yet, will retry later
+                }
+            }
+
+            widgetsToLoad.removeAll(toRemove);
+        }
+
+        if (!toRemove.isEmpty()) {
+            Platform.runLater(() -> updateWidgetGrid());
+        }
+    }
+
+    private String getWidgetType(DashboardWidget widget) {
+        if (widget instanceof GraphWidget) {
+            return "graph";
+        } else if (widget instanceof FieldViewWidget) {
+            return "fieldview";
+        } else if (widget instanceof AutoSelectorWidget) {
+            return "autoselector";
+        } else if (widget instanceof NumberWidget) {
+            return "number";
+        } else if (widget instanceof BooleanWidget) {
+            return "boolean";
+        } else if (widget instanceof TextWidget) {
+            return "text";
+        }
+        return "text";
     }
 
     private void setupDragAndDrop(javafx.scene.Node target) {
@@ -307,7 +811,6 @@ public class Dashboard {
                 String data = dragboard.getString();
                 System.out.println("Drop received - data: '" + data + "'");
 
-                // Calculate grid position from drop coordinates
                 double dropX = event.getX();
                 double dropY = event.getY();
                 GridPosition targetPosition = calculateGridPosition(dropX, dropY);
@@ -322,28 +825,42 @@ public class Dashboard {
                         if (widgets.containsKey(widgetKey)) {
                             DashboardWidget w = widgets.get(widgetKey);
                             GridPosition newPos = targetPosition;
+                            int spanCols = 1, spanRows = 1;
+
                             if (w instanceof GraphWidget) {
-                                int clampedCol = Math.max(0, Math.min(targetPosition.col, 4 - 2));
-                                newPos = new GridPosition(clampedCol, targetPosition.row);
-                                java.util.List<String> toRemove = new java.util.ArrayList<>();
-                                for (Map.Entry<String, GridPosition> e : widgetPositions.entrySet()) {
-                                    String otherKey = e.getKey();
-                                    if (otherKey.equals(widgetKey))
-                                        continue;
-                                    GridPosition p = e.getValue();
-                                    if (p.row >= newPos.row && p.row < newPos.row + 2 && p.col >= newPos.col
-                                            && p.col < newPos.col + 2) {
-                                        toRemove.add(otherKey);
-                                    }
-                                }
-                                for (String k : toRemove) {
-                                    widgets.remove(k);
-                                    widgetPositions.remove(k);
-                                    lastUpdateTime.remove(k);
+                                spanCols = 2;
+                                spanRows = 2;
+                            } else if (w instanceof FieldViewWidget) {
+                                spanCols = 3;
+                                spanRows = 2;
+                            } else if (w instanceof AutoSelectorWidget) {
+                                spanCols = 2;
+                                spanRows = 1;
+                            }
+
+                            int clampedCol = Math.max(0, Math.min(targetPosition.col, 4 - spanCols));
+                            newPos = new GridPosition(clampedCol, targetPosition.row);
+
+                            java.util.List<String> toRemove = new java.util.ArrayList<>();
+                            for (Map.Entry<String, GridPosition> e : widgetPositions.entrySet()) {
+                                String otherKey = e.getKey();
+                                if (otherKey.equals(widgetKey))
+                                    continue;
+                                GridPosition p = e.getValue();
+                                if (p.row >= newPos.row && p.row < newPos.row + spanRows && p.col >= newPos.col
+                                        && p.col < newPos.col + spanCols) {
+                                    toRemove.add(otherKey);
                                 }
                             }
+                            for (String k : toRemove) {
+                                widgets.remove(k);
+                                widgetPositions.remove(k);
+                                lastUpdateTime.remove(k);
+                            }
+
                             widgetPositions.put(widgetKey, newPos);
                             updateWidgetGrid();
+                            saveConfiguration();
                             success = true;
                         }
                     } else {
@@ -369,29 +886,36 @@ public class Dashboard {
                             NetworkTableType entryType = entry.getType();
                             System.out.println("Entry type: " + entryType);
 
-                            NetworkTableValue ntValue = entry.getValue();
-                            if (ntValue != null) {
-                                Object value = ntValue.getValue();
-                                if (value != null) {
-                                    System.out.println(
-                                            "Entry value: " + value + " (type: " + value.getClass().getSimpleName()
-                                                    + ")");
-                                    String widgetType = determineWidgetType(value);
-                                    System.out.println("Widget type determined: " + widgetType);
-                                    widget = createWidgetFromType(widgetType, key, value);
-                                    System.out.println("Widget successfully added!");
+                            String keyBasedType = determineWidgetTypeFromKey(key);
+                            if (keyBasedType != null) {
+                                System.out.println("Widget type from key pattern: " + keyBasedType);
+                                widget = createWidgetFromType(keyBasedType, key, null);
+                                System.out.println("Widget successfully added!");
+                            } else {
+                                NetworkTableValue ntValue = entry.getValue();
+                                if (ntValue != null) {
+                                    Object value = ntValue.getValue();
+                                    if (value != null) {
+                                        System.out.println(
+                                                "Entry value: " + value + " (type: " + value.getClass().getSimpleName()
+                                                        + ")");
+                                        String widgetType = determineWidgetType(value);
+                                        System.out.println("Widget type determined: " + widgetType);
+                                        widget = createWidgetFromType(widgetType, key, value);
+                                        System.out.println("Widget successfully added!");
+                                    } else {
+                                        System.out.println("Value is null but entry type is available: " + entryType);
+                                        String widgetType = determineWidgetTypeFromNetworkTableType(entryType);
+                                        System.out.println("Widget type from entry type: " + widgetType);
+                                        widget = createWidgetFromType(widgetType, key, null);
+                                    }
                                 } else {
-                                    System.out.println("Value is null but entry type is available: " + entryType);
                                     String widgetType = determineWidgetTypeFromNetworkTableType(entryType);
-                                    System.out.println("Widget type from entry type: " + widgetType);
+                                    System.out.println(
+                                            "NetworkTableValue is null, using entry type to determine widget: "
+                                                    + widgetType);
                                     widget = createWidgetFromType(widgetType, key, null);
                                 }
-                            } else {
-                                String widgetType = determineWidgetTypeFromNetworkTableType(entryType);
-                                System.out.println(
-                                        "NetworkTableValue is null, using entry type to determine widget: "
-                                                + widgetType);
-                                widget = createWidgetFromType(widgetType, key, null);
                             }
 
                             if (widget == null) {
@@ -407,6 +931,7 @@ public class Dashboard {
                         if (widget != null) {
                             widgetPositions.put(widget.getKey(), targetPosition);
                             addWidgetToGrid(widget);
+                            saveConfiguration();
                             success = true;
 
                             widgetGrid.setStyle(
@@ -467,6 +992,60 @@ public class Dashboard {
         return "text";
     }
 
+    private String determineWidgetTypeFromKey(String key) {
+        if (key.endsWith("/active")) {
+            String parentPath = key.substring(0, key.length() - 7);
+            try {
+                NetworkTableInstance instance = NetworkTablesClient.getInstance();
+                if (instance != null) {
+                    NetworkTable table = instance.getTable(parentPath.split("/")[0]);
+                    if (table != null) {
+                        String subKey = parentPath.substring(parentPath.indexOf('/') + 1);
+                        NetworkTable subTable = table.getSubTable(subKey);
+                        var keys = subTable.getKeys();
+                        for (String k : keys) {
+                            if (k.equals("options")) {
+                                return "autoselector";
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+            }
+        } else if (!key.contains("/")) {
+            return null;
+        } else {
+            try {
+                NetworkTableInstance instance = NetworkTablesClient.getInstance();
+                if (instance != null) {
+                    NetworkTable table = instance.getTable(key.split("/")[0]);
+                    if (table != null) {
+                        String subKey = key.substring(key.indexOf('/') + 1);
+                        NetworkTable subTable = table.getSubTable(subKey);
+                        var keys = subTable.getKeys();
+                        boolean hasRobot = false;
+                        boolean hasActive = false;
+                        boolean hasOptions = false;
+                        for (String k : keys) {
+                            if (k.equals("robot") || k.contains("Robot")) {
+                                hasRobot = true;
+                            } else if (k.equals("active")) {
+                                hasActive = true;
+                            } else if (k.equals("options")) {
+                                hasOptions = true;
+                            }
+                        }
+                        if (hasRobot && !(hasActive && hasOptions)) {
+                            return "fieldview";
+                        }
+                    }
+                }
+            } catch (Exception e) {
+            }
+        }
+        return null;
+    }
+
     private String determineWidgetTypeFromNetworkTableType(NetworkTableType type) {
         if (type == NetworkTableType.kBoolean) {
             return "boolean";
@@ -493,6 +1072,15 @@ public class Dashboard {
                 return graphWidget;
             case "boolean":
                 return new BooleanWidget(title, key);
+            case "autoselector":
+                String parentKey = key.endsWith("/active") ? key.substring(0, key.length() - 7) : key;
+                String parentTitle = parentKey.contains("/") ? parentKey.substring(parentKey.lastIndexOf('/') + 1)
+                        : parentKey;
+                AutoSelectorWidget autoWidget = new AutoSelectorWidget(parentTitle, parentKey);
+                return autoWidget;
+            case "fieldview":
+                FieldViewWidget fieldWidget = new FieldViewWidget(title, key);
+                return fieldWidget;
             case "text":
             default:
                 return new TextWidget(title, key);
@@ -536,6 +1124,7 @@ public class Dashboard {
             widgets.put(key, graphWidget);
             widgetPositions.put(key, graphPos);
             updateWidgetGrid();
+            saveConfiguration();
         }
     }
 
@@ -548,6 +1137,7 @@ public class Dashboard {
             numWidget.setContextMenuCallback(() -> convertWidgetToGraph(key));
             widgets.put(key, numWidget);
             updateWidgetGrid();
+            saveConfiguration();
         }
     }
 
@@ -568,8 +1158,13 @@ public class Dashboard {
             ((NumberWidget) widget).setRemoveCallback(() -> removeWidget(key));
         } else if (widget instanceof GraphWidget) {
             ((GraphWidget) widget).setRemoveCallback(() -> removeWidget(key));
+        } else if (widget instanceof FieldViewWidget) {
+            ((FieldViewWidget) widget).setRemoveCallback(() -> removeWidget(key));
+        } else if (widget instanceof AutoSelectorWidget) {
+            ((AutoSelectorWidget) widget).setRemoveCallback(() -> removeWidget(key));
         }
         updateWidgetGrid();
+        saveConfiguration();
     }
 
     private GridPosition findNextAvailablePosition() {
@@ -610,10 +1205,15 @@ public class Dashboard {
     }
 
     private void removeWidget(String key) {
+        DashboardWidget widget = widgets.get(key);
+        if (widget instanceof AutoSelectorWidget) {
+            ((AutoSelectorWidget) widget).shutdown();
+        }
         widgets.remove(key);
         widgetPositions.remove(key);
         lastUpdateTime.remove(key);
         updateWidgetGrid();
+        saveConfiguration();
     }
 
     private void showGridSkeleton() {
@@ -649,21 +1249,17 @@ public class Dashboard {
     private GridPosition calculateGridPosition(double x, double y) {
         int maxCols = 4;
 
-        // Account for padding and gaps (matching widgetGrid settings)
         double leftPadding = 15;
         double topPadding = 15;
         double hgap = 15;
         double vgap = 15;
 
-        // Cell size based on column constraints (pref width 250 + gap 15)
         double cellWidth = 250 + hgap;
-        double cellHeight = 150 + vgap; // Prefer height 150 + gap
+        double cellHeight = 150 + vgap;
 
-        // Calculate position in grid
         int col = (int) ((x - leftPadding) / cellWidth);
         int row = (int) ((y - topPadding) / cellHeight);
 
-        // Clamp to valid range
         col = Math.max(0, Math.min(col, maxCols - 1));
         row = Math.max(0, row);
 

@@ -1,5 +1,6 @@
 package com.funkylogclient;
 
+import javafx.animation.AnimationTimer;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -39,6 +40,10 @@ public class GraphWidget extends DashboardWidget {
     private double timeFrame = DEFAULT_TIMEFRAME;
     private double yMin = Double.NaN;
     private double yMax = Double.NaN;
+    private DataPoint lastPoint = null;
+    private DataPoint secondLastPoint = null;
+    private long lastUpdateTime = 0;
+    private AnimationTimer animationTimer;
 
     public GraphWidget(String title, String key) {
         super(title, key);
@@ -67,6 +72,14 @@ public class GraphWidget extends DashboardWidget {
 
         contentBox.getChildren().add(chartPane);
         VBox.setVgrow(chartPane, javafx.scene.layout.Priority.ALWAYS);
+
+        animationTimer = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                redraw();
+            }
+        };
+        animationTimer.start();
 
         redraw();
     }
@@ -153,6 +166,35 @@ public class GraphWidget extends DashboardWidget {
                 double x2 = leftPadding + ((p2.time - oldestTime) / timeFrame) * chartWidth;
                 double y2 = topPadding + chartHeight - ((p2.value - yMin) / (yMax - yMin)) * chartHeight;
                 gc.strokeLine(x1, y1, x2, y2);
+            }
+
+            if (lastPoint != null && lastPoint.time > currentTime - timeFrame) {
+                long currentMillis = System.currentTimeMillis();
+                long timeSinceUpdate = currentMillis - lastUpdateTime;
+
+                double extrapolatedValue = lastPoint.value;
+                if (secondLastPoint != null && timeSinceUpdate > 0) {
+                    double dtLast = (lastPoint.time - secondLastPoint.time);
+                    if (dtLast > 0) {
+                        double dv = (lastPoint.value - secondLastPoint.value) / dtLast;
+                        double extrapolationTime = Math.min(timeSinceUpdate / 1000.0, 0.5);
+                        extrapolatedValue = lastPoint.value + dv * extrapolationTime;
+                    }
+                }
+
+                double lastX = leftPadding + ((lastPoint.time - oldestTime) / timeFrame) * chartWidth;
+                double lastY = topPadding + chartHeight - ((lastPoint.value - yMin) / (yMax - yMin)) * chartHeight;
+                double extrapolatedX = leftPadding + ((currentTime - oldestTime) / timeFrame) * chartWidth;
+                double extrapolatedY = topPadding + chartHeight
+                        - ((extrapolatedValue - yMin) / (yMax - yMin)) * chartHeight;
+
+                if (extrapolatedX > lastX && extrapolatedX <= width - rightPadding) {
+                    gc.setStroke(Color.web("#FF8C00"));
+                    gc.setLineWidth(2);
+                    gc.setLineDashes(5, 5);
+                    gc.strokeLine(lastX, lastY, extrapolatedX, extrapolatedY);
+                    gc.setLineDashes(null);
+                }
             }
         }
     }
@@ -265,9 +307,12 @@ public class GraphWidget extends DashboardWidget {
             double oldestTime = Math.max(0, currentTime - timeFrame);
             data.removeIf(p -> p.time < oldestTime);
 
-            data.add(new DataPoint(currentTime, numValue));
+            DataPoint newPoint = new DataPoint(currentTime, numValue);
+            data.add(newPoint);
 
-            redraw();
+            secondLastPoint = lastPoint;
+            lastPoint = newPoint;
+            lastUpdateTime = currentMillis;
         }
     }
 

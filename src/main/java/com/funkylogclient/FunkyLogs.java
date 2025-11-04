@@ -16,6 +16,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
@@ -28,6 +29,7 @@ public class FunkyLogs extends Application {
     public static final String APP_NAME = "FunkyLogs v2.0.8";
 
     private BorderPane root;
+    private static Dashboard dashboard;
 
     private double xl = 100;
     private double xr = 1100;
@@ -48,6 +50,13 @@ public class FunkyLogs extends Application {
         UDPClient.start();
         FunkyLogSorter.makeNewLogFile();
         primaryStage.setTitle(APP_NAME);
+
+        try {
+            Image logoImage = new Image(getClass().getResource("logo846.png").toExternalForm());
+            primaryStage.getIcons().add(logoImage);
+        } catch (Exception e) {
+            System.err.println("Failed to load application icon: " + e.getMessage());
+        }
 
         root = new BorderPane();
         root.getStyleClass().add("root");
@@ -124,7 +133,7 @@ public class FunkyLogs extends Application {
         dashboardTab.setStyle(
                 "-fx-background-color: #404040; -fx-text-fill: #E0E0E0; -fx-padding: 0px 2px; -fx-font-size: 11px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
 
-        Dashboard dashboard = new Dashboard();
+        dashboard = new Dashboard();
         dashboardTab.setContent(dashboard.getContainer());
 
         tabPane.getTabs().addAll(logsTab, dashboardTab);
@@ -174,6 +183,11 @@ public class FunkyLogs extends Application {
         scene.getStylesheets().add(getClass().getResource("dark-theme.css").toExternalForm());
         primaryStage.initStyle(StageStyle.TRANSPARENT);
         primaryStage.setScene(scene);
+        primaryStage.setOnCloseRequest(event -> {
+            if (dashboard != null) {
+                dashboard.shutdown();
+            }
+        });
         primaryStage.show();
 
         setStageSize(primaryStage);
@@ -348,7 +362,12 @@ public class FunkyLogs extends Application {
         utilityBar.setStyle(
                 "-fx-background-color: #2A2A2A; -fx-background-radius: 12 12 0 0; -fx-border-color: transparent transparent #404040 transparent; -fx-border-width: 0 0 1px 0;");
 
-        Circle closeButton = createUtilityButton(true, () -> System.exit(0));
+        Circle closeButton = createUtilityButton(true, () -> {
+            if (dashboard != null) {
+                dashboard.shutdown();
+            }
+            System.exit(0);
+        });
         Circle minimizeButton = createUtilityButton(false, () -> primaryStage.setIconified(true));
         Circle maximizeButton = createMaximizeButton(primaryStage);
 

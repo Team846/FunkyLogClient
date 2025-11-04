@@ -1,0 +1,15 @@
+{
+  "widgets" : [ {
+    "key" : "SmartDashboard/GPDField",
+    "type" : "fieldview",
+    "title" : "GPDField",
+    "col" : 0,
+    "row" : 0
+  }, {
+    "key" : "SmartDashboard/SendableChooser[0]",
+    "type" : "autoselector",
+    "title" : "SendableChooser[0]",
+    "col" : 1,
+    "row" : 2
+  } ]
+}
