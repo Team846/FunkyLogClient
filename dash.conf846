@@ -1,15 +1,9 @@
 {
   "widgets" : [ {
-    "key" : "SmartDashboard/GPDField",
+    "key" : "SmartDashboard/Drivetrain",
     "type" : "fieldview",
-    "title" : "GPDField",
-    "col" : 0,
-    "row" : 0
-  }, {
-    "key" : "SmartDashboard/SendableChooser[0]",
-    "type" : "autoselector",
-    "title" : "SendableChooser[0]",
+    "title" : "Drivetrain",
     "col" : 1,
-    "row" : 2
+    "row" : 0
   } ]
 }

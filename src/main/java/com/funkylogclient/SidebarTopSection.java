@@ -3,54 +3,30 @@ package com.funkylogclient;
 import java.net.URL;
 
 import javafx.geometry.Pos;
-import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
 public class SidebarTopSection {
     public static HBox getTopSection(URL logoURL, URL exitImgURL, Stage primaryStage) {      
         ImageView logoImage = new ImageView(logoURL.toString());
-        logoImage.setStyle(Styles.LOGO_STYLE);
+        logoImage.setFitWidth(40);
+        logoImage.setFitHeight(40);
+        logoImage.setPreserveRatio(true);
+        logoImage.setSmooth(true);
 
         HBox logoImgBox = new HBox(logoImage);
-        logoImgBox.setAlignment(Pos.TOP_LEFT);
-        logoImgBox.setPrefWidth(1000);
+        logoImgBox.setAlignment(Pos.CENTER_LEFT);
 
-        HBox exitImgBox = new HBox();
-        exitImgBox.setPrefWidth(30);
-        exitImgBox.setPrefHeight(20);
-        exitImgBox.setMaxHeight(20);
-
-        ImageView exitImage = new ImageView(exitImgURL.toString());
-
-        exitImgBox.getChildren().add(exitImage);
-
-        ColorAdjust normalColorAdjust = new ColorAdjust();
-        normalColorAdjust.setBrightness(-0.3);
-
-        ColorAdjust hoverColorAdjust = new ColorAdjust();
-        hoverColorAdjust.setBrightness(0.3);
-
-        exitImgBox.setOnMouseClicked((MouseEvent e) -> {
-            System.exit(0);
-        });
-        exitImgBox.setOnMouseEntered((MouseEvent e) -> {
-            exitImage.setEffect(hoverColorAdjust);
-            exitImgBox.setScaleX(1.1);
-            exitImgBox.setScaleY(1.1);
-        });
-        exitImgBox.setOnMouseExited((MouseEvent e) -> {
-            exitImage.setEffect(normalColorAdjust);
-            exitImgBox.setScaleX(1.0);
-            exitImgBox.setScaleY(1.0);
-        });
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
         HBox topSection = new HBox(10);
-        topSection.setAlignment(Pos.TOP_RIGHT);
+        topSection.setAlignment(Pos.CENTER_LEFT);
 
-        topSection.getChildren().addAll(logoImgBox, exitImgBox);
+        topSection.getChildren().addAll(logoImgBox, spacer);
 
         return topSection;
     }

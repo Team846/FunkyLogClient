@@ -24,18 +24,25 @@ public class TextWidget extends DashboardWidget {
     }
 
     private void createTextDisplay() {
-        valueField = new TextField("N/A");
+        valueField = new TextField("--");
         valueField.setStyle(
-                "-fx-font-size: 24px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif; -fx-text-fill: #C9D1D9; -fx-background-color: transparent; -fx-border-width: 0 0 2 0; -fx-border-color: #30363D; -fx-padding: 8px 8px 4px 8px;");
+                "-fx-font-size: 20px; -fx-font-weight: bold; -fx-font-family: " + Styles.FONT_FAMILY + "; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-background-color: transparent; -fx-border-width: 0 0 2 0; -fx-border-color: " + Styles.BORDER_DARK + "; -fx-padding: 8px 8px 6px 8px; -fx-alignment: center;");
 
         valueField.setEditable(isEditable);
         valueField.setDisable(!isEditable);
 
+        if (isEditable) {
+            valueField.setStyle(
+                    "-fx-font-size: 20px; -fx-font-weight: bold; -fx-font-family: " + Styles.FONT_FAMILY + "; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-background-color: " + Styles.BG_MEDIUM + "; -fx-border-width: 0 0 2 0; -fx-border-color: " + Styles.ACCENT_PRIMARY + "; -fx-padding: 8px 8px 6px 8px; -fx-alignment: center; -fx-background-radius: 6px;");
+        }
+
         confirmButton = new Button("✓");
-        confirmButton.setStyle(
-                "-fx-font-size: 14px; -fx-background-color: #238636; -fx-text-fill: white; -fx-padding: 4px 8px; -fx-background-radius: 4px;");
+        confirmButton.setStyle(Styles.CONFIRM_BUTTON_STYLE);
         confirmButton.setVisible(false);
         confirmButton.setOnAction(e -> writeValueBack());
+
+        confirmButton.setOnMouseEntered(e -> confirmButton.setStyle(Styles.CONFIRM_BUTTON_HOVER_STYLE));
+        confirmButton.setOnMouseExited(e -> confirmButton.setStyle(Styles.CONFIRM_BUTTON_STYLE));
 
         if (isEditable) {
             valueField.setOnAction(e -> {
@@ -51,7 +58,7 @@ public class TextWidget extends DashboardWidget {
             });
         }
 
-        HBox inputContainer = new HBox(4);
+        HBox inputContainer = new HBox(6);
         inputContainer.setAlignment(Pos.CENTER);
         inputContainer.getChildren().addAll(valueField, confirmButton);
 
@@ -105,7 +112,7 @@ public class TextWidget extends DashboardWidget {
                     valueField.setText(value.toString());
                 }
             } else {
-                valueField.setText("N/A");
+                valueField.setText("--");
             }
         } finally {
             isUpdating = false;

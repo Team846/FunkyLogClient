@@ -1,6 +1,7 @@
 package com.funkylogclient;
 
-import javafx.animation.AnimationTimer;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -12,6 +13,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
+import javafx.util.Duration;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +34,7 @@ public class GraphWidget extends DashboardWidget {
     private StackPane chartPane;
     private GraphicsContext gc;
     private List<DataPoint> data;
-    private static final int MAX_DATA_POINTS = 700;
+    private static final int MAX_DATA_POINTS = 500;
     private static final double DEFAULT_TIMEFRAME = 7.0;
     private long startTime = System.currentTimeMillis();
     private ContextMenu contextMenu;
@@ -43,7 +46,10 @@ public class GraphWidget extends DashboardWidget {
     private DataPoint lastPoint = null;
     private DataPoint secondLastPoint = null;
     private long lastUpdateTime = 0;
-    private AnimationTimer animationTimer;
+    private Timeline timeline;
+    private volatile boolean needsRedraw = true;
+    private double cachedMinY = 0;
+    private double cachedMaxY = 1;
 
     public GraphWidget(String title, String key) {
         super(title, key);
@@ -59,7 +65,7 @@ public class GraphWidget extends DashboardWidget {
         canvas.setWidth(280);
         canvas.setHeight(190);
         gc = canvas.getGraphicsContext2D();
-        data = new ArrayList<>();
+        data = new ArrayList<>(MAX_DATA_POINTS);
 
         chartPane = new StackPane();
         chartPane.setMinHeight(190);
@@ -67,21 +73,28 @@ public class GraphWidget extends DashboardWidget {
         chartPane.getChildren().add(canvas);
         canvas.widthProperty().bind(chartPane.widthProperty());
         canvas.heightProperty().bind(chartPane.heightProperty());
-        canvas.widthProperty().addListener(e -> redraw());
-        canvas.heightProperty().addListener(e -> redraw());
+        canvas.widthProperty().addListener(e -> needsRedraw = true);
+        canvas.heightProperty().addListener(e -> needsRedraw = true);
 
         contentBox.getChildren().add(chartPane);
         VBox.setVgrow(chartPane, javafx.scene.layout.Priority.ALWAYS);
 
-        animationTimer = new AnimationTimer() {
-            @Override
-            public void handle(long now) {
+        timeline = new Timeline(new KeyFrame(Duration.millis(50), e -> {
+            if (needsRedraw) {
                 redraw();
+                needsRedraw = false;
             }
-        };
-        animationTimer.start();
+        }));
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
 
         redraw();
+    }
+
+    public void stop() {
+        if (timeline != null) {
+            timeline.stop();
+        }
     }
 
     private void redraw() {
@@ -89,21 +102,32 @@ public class GraphWidget extends DashboardWidget {
         double height = canvas.getHeight();
 
         gc.clearRect(0, 0, width, height);
-        gc.setFill(Color.web("#21262D"));
+        gc.setFill(Color.web(Styles.BG_DARK));
         gc.fillRect(0, 0, width, height);
 
         double currentTime = (System.currentTimeMillis() - startTime) / 1000.0;
         double oldestTime = Math.max(0, currentTime - timeFrame);
 
-        List<DataPoint> visibleData = new ArrayList<>();
-        for (DataPoint point : data) {
+        int visibleCount = 0;
+        double minY = Double.MAX_VALUE;
+        double maxY = Double.MIN_VALUE;
+
+        for (int i = 0; i < data.size(); i++) {
+            DataPoint point = data.get(i);
             if (point.time >= oldestTime && point.time <= currentTime) {
-                visibleData.add(point);
+                visibleCount++;
+                if (point.value < minY) minY = point.value;
+                if (point.value > maxY) maxY = point.value;
             }
         }
 
-        double minY = visibleData.isEmpty() ? 0 : visibleData.stream().mapToDouble(d -> d.value).min().orElse(0);
-        double maxY = visibleData.isEmpty() ? 1 : visibleData.stream().mapToDouble(d -> d.value).max().orElse(0);
+        if (visibleCount == 0) {
+            minY = cachedMinY;
+            maxY = cachedMaxY;
+        } else {
+            cachedMinY = minY;
+            cachedMaxY = maxY;
+        }
 
         if (autoScale) {
             double range = maxY - minY;
@@ -125,7 +149,7 @@ public class GraphWidget extends DashboardWidget {
         double chartWidth = width - leftPadding - rightPadding;
         double chartHeight = height - bottomPadding - topPadding;
 
-        gc.setStroke(Color.web("#30363D"));
+        gc.setStroke(Color.web(Styles.BORDER_DARK));
         gc.setLineWidth(1);
 
         for (int i = 0; i <= 4; i++) {
@@ -138,7 +162,7 @@ public class GraphWidget extends DashboardWidget {
             gc.strokeLine(x, topPadding, x, height - bottomPadding);
         }
 
-        gc.setFill(Color.web("#C9D1D9"));
+        gc.setFill(Color.web(Styles.TEXT_PRIMARY));
         gc.setFont(new Font(10));
 
         for (int i = 0; i <= 4; i++) {
@@ -155,17 +179,23 @@ public class GraphWidget extends DashboardWidget {
             gc.fillText(String.format("%.1f", time), x, height - 5);
         }
 
-        if (!visibleData.isEmpty()) {
+        if (visibleCount > 0) {
             gc.setStroke(Color.web("#FF8C00"));
             gc.setLineWidth(2);
-            for (int i = 0; i < visibleData.size() - 1; i++) {
-                DataPoint p1 = visibleData.get(i);
-                DataPoint p2 = visibleData.get(i + 1);
-                double x1 = leftPadding + ((p1.time - oldestTime) / timeFrame) * chartWidth;
-                double y1 = topPadding + chartHeight - ((p1.value - yMin) / (yMax - yMin)) * chartHeight;
-                double x2 = leftPadding + ((p2.time - oldestTime) / timeFrame) * chartWidth;
-                double y2 = topPadding + chartHeight - ((p2.value - yMin) / (yMax - yMin)) * chartHeight;
-                gc.strokeLine(x1, y1, x2, y2);
+            
+            DataPoint prevPoint = null;
+            for (int i = 0; i < data.size(); i++) {
+                DataPoint point = data.get(i);
+                if (point.time >= oldestTime && point.time <= currentTime) {
+                    if (prevPoint != null) {
+                        double x1 = leftPadding + ((prevPoint.time - oldestTime) / timeFrame) * chartWidth;
+                        double y1 = topPadding + chartHeight - ((prevPoint.value - yMin) / (yMax - yMin)) * chartHeight;
+                        double x2 = leftPadding + ((point.time - oldestTime) / timeFrame) * chartWidth;
+                        double y2 = topPadding + chartHeight - ((point.value - yMin) / (yMax - yMin)) * chartHeight;
+                        gc.strokeLine(x1, y1, x2, y2);
+                    }
+                    prevPoint = point;
+                }
             }
 
             if (lastPoint != null && lastPoint.time > currentTime - timeFrame) {
@@ -207,6 +237,7 @@ public class GraphWidget extends DashboardWidget {
 
         MenuItem removeItem = new MenuItem("Remove Widget");
         removeItem.setOnAction(e -> {
+            stop();
             if (removeCallback != null)
                 removeCallback.run();
         });
@@ -219,7 +250,7 @@ public class GraphWidget extends DashboardWidget {
             autoScale = true;
             yMin = Double.NaN;
             yMax = Double.NaN;
-            redraw();
+            needsRedraw = true;
         });
 
         MenuItem setTimeFrame = new MenuItem("Set Timeframe");
@@ -252,7 +283,7 @@ public class GraphWidget extends DashboardWidget {
                     yMin = min;
                     yMax = max;
                     autoScale = false;
-                    redraw();
+                    needsRedraw = true;
                 }
             } catch (NumberFormatException e) {
                 System.err.println("Invalid number format");
@@ -274,7 +305,7 @@ public class GraphWidget extends DashboardWidget {
                     long currentTime = System.currentTimeMillis();
                     double oldestTime = (currentTime - startTime) / 1000.0 - timeFrame;
                     data.removeIf(p -> p.time < oldestTime);
-                    redraw();
+                    needsRedraw = true;
                 }
             } catch (NumberFormatException e) {
                 System.err.println("Invalid number format");
@@ -313,6 +344,7 @@ public class GraphWidget extends DashboardWidget {
             secondLastPoint = lastPoint;
             lastPoint = newPoint;
             lastUpdateTime = currentMillis;
+            needsRedraw = true;
         }
     }
 

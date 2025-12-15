@@ -51,9 +51,9 @@ public class AutoSelectorWidget extends DashboardWidget {
                 } else {
                     setText(item);
                     setStyle(
-                            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+                            "-fx-font-size: 14px; -fx-font-weight: bold; " +
                                     "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                                    "-fx-text-fill: #C9D1D9; " +
+                                    "-fx-text-fill: #FFFFFF; " +
                                     "-fx-background-color: transparent; " +
                                     "-fx-padding: 0;");
                 }
@@ -61,18 +61,18 @@ public class AutoSelectorWidget extends DashboardWidget {
         });
 
         modeComboBox.setStyle(
-                "-fx-font-size: 16px; -fx-font-weight: bold; " +
-                        "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                        "-fx-text-fill: #C9D1D9; " +
-                        "-fx-background-color: #30363D; " +
-                        "-fx-border-color: #454D56; " +
-                        "-fx-border-width: 2px; " +
+                "-fx-font-size: 14px; -fx-font-weight: bold; " +
+                        "-fx-font-family: " + Styles.FONT_FAMILY + "; " +
+                        "-fx-text-fill: " + Styles.TEXT_WHITE + "; " +
+                        "-fx-background-color: " + Styles.BG_MEDIUM + "; " +
+                        "-fx-border-color: " + Styles.BORDER_LIGHT + "; " +
+                        "-fx-border-width: 1px; " +
                         "-fx-border-radius: 6px; " +
                         "-fx-background-radius: 6px; " +
                         "-fx-padding: 8px 12px;" +
                         "-fx-cursor: hand;");
 
-        modeComboBox.setMinWidth(200);
+        modeComboBox.setMinWidth(180);
         modeComboBox.setMaxWidth(Double.MAX_VALUE);
 
         modeComboBox.sceneProperty().addListener((obs, oldScene, newScene) -> {
@@ -81,7 +81,7 @@ public class AutoSelectorWidget extends DashboardWidget {
                     Node arrowButton = modeComboBox.lookup(".arrow-button");
                     if (arrowButton != null) {
                         arrowButton.setStyle(
-                                "-fx-background-color: #21262D; " +
+                                "-fx-background-color: " + Styles.BG_DARK + "; " +
                                         "-fx-border-color: transparent; " +
                                         "-fx-background-radius: 0 6px 6px 0;");
                     }
@@ -89,7 +89,7 @@ public class AutoSelectorWidget extends DashboardWidget {
                     Node arrow = modeComboBox.lookup(".arrow");
                     if (arrow != null) {
                         arrow.setStyle(
-                                "-fx-background-color: #C9D1D9; " +
+                                "-fx-background-color: " + Styles.TEXT_PRIMARY + "; " +
                                         "-fx-shape: 'M 0 4 L 8 4 L 4 8 Z';");
                     }
                 });
@@ -98,44 +98,30 @@ public class AutoSelectorWidget extends DashboardWidget {
 
         modeComboBox.setOnMouseEntered(e -> {
             modeComboBox.setStyle(
-                    "-fx-font-size: 16px; -fx-font-weight: bold; " +
-                            "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-text-fill: #E0E0E0; " +
-                            "-fx-background-color: #30363D; " +
-                            "-fx-border-color: #56A8F4; " +
-                            "-fx-border-width: 2px; " +
+                    "-fx-font-size: 14px; -fx-font-weight: bold; " +
+                            "-fx-font-family: " + Styles.FONT_FAMILY + "; " +
+                            "-fx-text-fill: " + Styles.TEXT_WHITE + "; " +
+                            "-fx-background-color: " + Styles.BG_LIGHT + "; " +
+                            "-fx-border-color: " + Styles.ACCENT_PRIMARY + "; " +
+                            "-fx-border-width: 1px; " +
                             "-fx-border-radius: 6px; " +
                             "-fx-background-radius: 6px; " +
                             "-fx-padding: 8px 12px;" +
                             "-fx-cursor: hand;");
-            Node arrowButton = modeComboBox.lookup(".arrow-button");
-            if (arrowButton != null) {
-                arrowButton.setStyle(
-                        "-fx-background-color: #30363D; " +
-                                "-fx-border-color: transparent; " +
-                                "-fx-background-radius: 0 6px 6px 0;");
-            }
         });
 
         modeComboBox.setOnMouseExited(e -> {
             modeComboBox.setStyle(
-                    "-fx-font-size: 16px; -fx-font-weight: bold; " +
-                            "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-text-fill: #C9D1D9; " +
-                            "-fx-background-color: #30363D; " +
-                            "-fx-border-color: #454D56; " +
-                            "-fx-border-width: 2px; " +
+                    "-fx-font-size: 14px; -fx-font-weight: bold; " +
+                            "-fx-font-family: " + Styles.FONT_FAMILY + "; " +
+                            "-fx-text-fill: " + Styles.TEXT_WHITE + "; " +
+                            "-fx-background-color: " + Styles.BG_MEDIUM + "; " +
+                            "-fx-border-color: " + Styles.BORDER_LIGHT + "; " +
+                            "-fx-border-width: 1px; " +
                             "-fx-border-radius: 6px; " +
                             "-fx-background-radius: 6px; " +
                             "-fx-padding: 8px 12px;" +
                             "-fx-cursor: hand;");
-            Node arrowButton = modeComboBox.lookup(".arrow-button");
-            if (arrowButton != null) {
-                arrowButton.setStyle(
-                        "-fx-background-color: #21262D; " +
-                                "-fx-border-color: transparent; " +
-                                "-fx-background-radius: 0 6px 6px 0;");
-            }
         });
 
         modeComboBox.setOnAction(e -> {
@@ -144,10 +130,10 @@ public class AutoSelectorWidget extends DashboardWidget {
             }
         });
 
-        refreshButton = new Button("⟳");
+        refreshButton = new Button("↻");
         refreshButton.setStyle(
                 "-fx-font-size: 16px; " +
-                        "-fx-background-color: #238636; " +
+                        "-fx-background-color: #FF8C00; " +
                         "-fx-text-fill: white; " +
                         "-fx-padding: 8px 12px; " +
                         "-fx-background-radius: 6px; " +
@@ -157,7 +143,7 @@ public class AutoSelectorWidget extends DashboardWidget {
         refreshButton.setOnMouseEntered(e -> {
             refreshButton.setStyle(
                     "-fx-font-size: 16px; " +
-                            "-fx-background-color: #2EA043; " +
+                            "-fx-background-color: #FFA333; " +
                             "-fx-text-fill: white; " +
                             "-fx-padding: 8px 12px; " +
                             "-fx-background-radius: 6px; " +
@@ -167,14 +153,14 @@ public class AutoSelectorWidget extends DashboardWidget {
         refreshButton.setOnMouseExited(e -> {
             refreshButton.setStyle(
                     "-fx-font-size: 16px; " +
-                            "-fx-background-color: #238636; " +
+                            "-fx-background-color: #FF8C00; " +
                             "-fx-text-fill: white; " +
                             "-fx-padding: 8px 12px; " +
                             "-fx-background-radius: 6px; " +
                             "-fx-cursor: hand;");
         });
 
-        HBox selectorContainer = new HBox(8);
+        HBox selectorContainer = new HBox(10);
         selectorContainer.setAlignment(Pos.CENTER);
         selectorContainer.getChildren().addAll(modeComboBox, refreshButton);
 

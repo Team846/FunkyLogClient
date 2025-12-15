@@ -1,0 +1,11 @@
+# FunkyLogClient Test Server Dependencies
+
+# Required for NetworkTables server functionality
+# These are the official WPILib Python bindings for FRC NetworkTables
+pyntcore>=2024.0.0
+robotpy-wpiutil>=2024.0.0
+
+# Note: If you only need the UDP logging functionality, 
+# you can run the server without installing these packages.
+# The NetworkTables server will be disabled but UDP logging will still work.
+

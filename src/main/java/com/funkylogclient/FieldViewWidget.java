@@ -178,7 +178,7 @@ public class FieldViewWidget extends DashboardWidget {
             gc.fillRect(offsetX, offsetY, displayWidth, displayHeight);
         }
 
-        gc.setFill(Color.web("#C9D1D9"));
+        gc.setFill(Color.web(Styles.TEXT_PRIMARY));
         gc.setFont(new Font(9));
         gc.setTextAlign(TextAlignment.CENTER);
         gc.fillText("0", offsetX + displayWidth / 2, Math.max(offsetY - 3, 9));
@@ -186,7 +186,7 @@ public class FieldViewWidget extends DashboardWidget {
                 Math.min(offsetY + displayHeight + 12, height - 3));
 
         if (trajectory.size() > 1) {
-            gc.setStroke(Color.web("#58A6FF"));
+            gc.setStroke(Color.web("#FF8C00"));
             gc.setLineWidth(1.5);
             for (int i = 0; i < trajectory.size() - 1; i++) {
                 Pose2D p1 = trajectory.get(i);

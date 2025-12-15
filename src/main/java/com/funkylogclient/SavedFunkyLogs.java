@@ -2,6 +2,8 @@ package com.funkylogclient;
 
 import java.util.LinkedList;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.*;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
@@ -12,9 +14,11 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.util.Callback;
 
 public class SavedFunkyLogs {
-    private static VBox messageZone;
+    private static ListView<Message> messageListView;
+    private static ObservableList<Message> messageList;
     private static Stage popupStage;
     private static LinkedList<Message> allMessages;
     private static boolean allowErrors = true;
@@ -91,19 +95,21 @@ public class SavedFunkyLogs {
         });
         filtersBox.getChildren().addAll(errorsCheckBox, warningsCheckBox, logsCheckBox);
 
-        messageZone = new VBox();
-        messageZone.setPrefSize(100000, 100000);
-        messageZone.setPadding(new Insets(5, 20, 5, 20));
-        messageZone.setSpacing(2.0);
-        messageZone.setStyle(Styles.SCROLL_PANE_STYLE);
+        messageList = FXCollections.observableArrayList();
+        messageListView = new ListView<>(messageList);
+        messageListView.setStyle("-fx-background-color: #1A1A1A; -fx-border-color: transparent;");
+        messageListView.setFixedCellSize(-1);
 
-        ScrollPane mScrollPane = new ScrollPane(messageZone);
-        mScrollPane.setFitToWidth(true);
-        mScrollPane.setFitToHeight(true);
-        mScrollPane.setStyle(Styles.SCROLL_PANE_STYLE);
-        VBox.setVgrow(mScrollPane, Priority.ALWAYS);
+        messageListView.setCellFactory(new Callback<ListView<Message>, ListCell<Message>>() {
+            @Override
+            public ListCell<Message> call(ListView<Message> listView) {
+                return new MessageListCell();
+            }
+        });
 
-        center.getChildren().addAll(searchBox, filtersBox, mScrollPane);
+        VBox.setVgrow(messageListView, Priority.ALWAYS);
+
+        center.getChildren().addAll(searchBox, filtersBox, messageListView);
         root.setCenter(center);
 
         Scene scene = new Scene(root, Color.TRANSPARENT);
@@ -298,16 +304,16 @@ public class SavedFunkyLogs {
     private static void reFilterMessages() {
         if (allMessages == null)
             return;
-        messageZone.getChildren().clear();
+        messageList.clear();
         for (Message m : allMessages) {
             if (!checkMessageBySearch(m))
                 continue;
             if (allowErrors && m.isError())
-                messageZone.getChildren().add(m.getComponent());
+                messageList.add(m);
             else if (allowWarnings && m.isWarning())
-                messageZone.getChildren().add(m.getComponent());
+                messageList.add(m);
             else if (allowLogs && m.isLog())
-                messageZone.getChildren().add(m.getComponent());
+                messageList.add(m);
         }
     }
 

@@ -5,6 +5,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.geometry.Insets;
+import javafx.scene.Cursor;
 
 public abstract class DashboardWidget {
     protected String title;
@@ -28,27 +29,34 @@ public abstract class DashboardWidget {
         container.setPrefSize(javafx.scene.layout.Region.USE_COMPUTED_SIZE,
                 javafx.scene.layout.Region.USE_COMPUTED_SIZE);
         container.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        container.setStyle(
-                "-fx-background-color: #21262D; -fx-background-radius: 8; -fx-border-color: #30363D; -fx-border-width: 1px; -fx-border-radius: 8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 1);");
+        container.setStyle(Styles.WIDGET_CONTAINER_STYLE);
+        container.setCursor(Cursor.HAND);
+
+        container.setOnMouseEntered(e -> {
+            container.setStyle("-fx-background-color: " + Styles.BG_MEDIUM + "; -fx-background-radius: 10px; -fx-border-color: " + Styles.BORDER_LIGHT + "; -fx-border-width: 1px; -fx-border-radius: 10px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 12, 0, 0, 3);");
+        });
+        container.setOnMouseExited(e -> {
+            container.setStyle(Styles.WIDGET_CONTAINER_STYLE);
+        });
 
         titleLabel = new Label(title);
-        titleLabel.setPadding(new Insets(10, 12, 10, 12));
+        titleLabel.setPadding(new Insets(10, 14, 10, 14));
         titleLabel.setStyle(
-                "-fx-background-color: #FF8C00; -fx-text-fill: #FFFFFF; -fx-font-size: 14px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif; -fx-background-radius: 8 8 0 0;");
+                "-fx-background-color: " + Styles.ACCENT_PRIMARY + "; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-font-size: 13px; -fx-font-weight: bold; -fx-font-family: " + Styles.FONT_FAMILY + "; -fx-background-radius: 10 10 0 0;");
         titleLabel.setMaxWidth(Double.MAX_VALUE);
         titleLabel.setAlignment(javafx.geometry.Pos.CENTER);
 
         this.contentBox = new VBox(8);
-        this.contentBox.setPadding(new Insets(12));
-        this.contentBox.setStyle("-fx-background-color: #21262D; -fx-background-radius: 0 0 8 8;");
+        this.contentBox.setPadding(new Insets(14));
+        this.contentBox.setStyle("-fx-background-color: " + Styles.BG_DARK + "; -fx-background-radius: 0 0 10 10;");
 
         container.getChildren().addAll(titleLabel, this.contentBox);
 
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(container.widthProperty());
         clip.heightProperty().bind(container.heightProperty());
-        clip.setArcWidth(12);
-        clip.setArcHeight(12);
+        clip.setArcWidth(16);
+        clip.setArcHeight(16);
         container.setClip(clip);
     }
 

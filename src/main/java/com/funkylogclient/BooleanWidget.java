@@ -31,19 +31,21 @@ public class BooleanWidget extends DashboardWidget {
         if (isEditable) {
             toggle = new CheckBox();
             toggle.setAllowIndeterminate(false);
-            toggle.setStyle("-fx-font-size: 16px; -fx-text-fill: #C9D1D9;");
+            toggle.setStyle("-fx-font-size: 16px; -fx-text-fill: " + Styles.TEXT_PRIMARY + ";");
             toggle.selectedProperty().addListener((obs, was, isNow) -> {
                 writeValueBack(isNow);
                 if (toggleLabel != null)
-                    toggleLabel.setText(isNow ? "T" : "F");
+                    toggleLabel.setText(isNow ? "TRUE" : "FALSE");
+                if (toggleLabel != null)
+                    toggleLabel.setFill(isNow ? Color.web("#FFD700") : Color.web("#F85149"));
             });
 
-            toggleLabel = new Text("F");
-            toggleLabel.setFill(Color.web("#C9D1D9"));
+            toggleLabel = new Text("FALSE");
+            toggleLabel.setFill(Color.web("#F85149"));
             toggleLabel.setStyle(
-                    "-fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+                    "-fx-font-size: 14px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
 
-            javafx.scene.layout.HBox h = new javafx.scene.layout.HBox(8);
+            javafx.scene.layout.HBox h = new javafx.scene.layout.HBox(10);
             h.setAlignment(Pos.CENTER);
             h.getChildren().addAll(toggle, toggleLabel);
 
@@ -52,20 +54,27 @@ public class BooleanWidget extends DashboardWidget {
             booleanContainer.getChildren().add(h);
             contentBox.getChildren().add(booleanContainer);
         } else {
-            indicator = new Rectangle(50, 50);
-            indicator.setFill(Color.web("#F85149"));
-            indicator.setStroke(Color.web("#30363D"));
+            indicator = new Rectangle(56, 56);
+            indicator.setFill(Color.web(Styles.ACCENT_ERROR));
+            indicator.setStroke(Color.web(Styles.BORDER_DARK));
             indicator.setStrokeWidth(2);
-            indicator.setArcWidth(12);
-            indicator.setArcHeight(12);
+            indicator.setArcWidth(14);
+            indicator.setArcHeight(14);
 
-            statusText = new Text("F");
-            statusText.setFill(Color.web("#C9D1D9"));
+            statusText = new Text("FALSE");
+            statusText.setFill(Color.WHITE);
             statusText.setStyle(
-                    "-fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+                    "-fx-font-size: 12px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
 
             indicatorStack = new StackPane();
             indicatorStack.getChildren().addAll(indicator, statusText);
+
+            indicatorStack.setOnMouseEntered(e -> {
+                indicator.setStroke(Color.web(Styles.BORDER_LIGHT));
+            });
+            indicatorStack.setOnMouseExited(e -> {
+                indicator.setStroke(Color.web(Styles.BORDER_DARK));
+            });
 
             VBox booleanContainer = new VBox(12);
             booleanContainer.setAlignment(Pos.CENTER);
@@ -107,18 +116,20 @@ public class BooleanWidget extends DashboardWidget {
         if (isEditable) {
             if (toggle != null && !isUpdating) {
                 toggle.setSelected(boolValue);
-                if (toggleLabel != null)
-                    toggleLabel.setText(boolValue ? "T" : "F");
+                if (toggleLabel != null) {
+                    toggleLabel.setText(boolValue ? "TRUE" : "FALSE");
+                    toggleLabel.setFill(boolValue ? Color.web("#FFD700") : Color.web("#F85149"));
+                }
             }
             return;
         }
 
         if (boolValue) {
-            indicator.setFill(Color.web("#3FB950"));
-            statusText.setText("T");
+            indicator.setFill(Color.web("#FFD700"));
+            statusText.setText("TRUE");
         } else {
             indicator.setFill(Color.web("#F85149"));
-            statusText.setText("F");
+            statusText.setText("FALSE");
         }
     }
 

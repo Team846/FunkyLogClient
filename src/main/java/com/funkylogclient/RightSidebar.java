@@ -8,6 +8,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -20,16 +21,23 @@ public class RightSidebar {
                         ChangeListener<? super String> portFieldChangeListener,
                         EventHandler<ActionEvent> confirmButtonListener, String activeTab) {
 
-                VBox sidebarContent = new VBox();
-                sidebarContent.setPadding(new Insets(2, 5, 5, 5));
-                sidebarContent.setSpacing(2);
-                sidebarContent.setStyle("-fx-background-color: #252525;");
+                VBox sidebarContent = new VBox(8);
+                sidebarContent.setPadding(new Insets(12, 12, 12, 12));
+                sidebarContent.setStyle("-fx-background-color: " + Styles.BG_DARK + ";");
 
                 sidebarContent.getChildren().add(SidebarTopSection.getTopSection(logoURL, exitImgURL, primaryStage));
 
+                Region titleSpacer = new Region();
+                titleSpacer.setMinHeight(4);
+                sidebarContent.getChildren().add(titleSpacer);
+
                 Text title = new Text("FunkyLogs");
-                title.setStyle(Styles.TEXT_STYLE + Styles.BOLD_TEXT);
+                title.setStyle(Styles.LABEL_TITLE);
                 sidebarContent.getChildren().add(title);
+
+                Region sectionSpacer = new Region();
+                sectionSpacer.setMinHeight(8);
+                sidebarContent.getChildren().add(sectionSpacer);
 
                 if ("Dashboard".equals(activeTab)) {
                         sidebarContent.getChildren()
@@ -85,35 +93,26 @@ public class RightSidebar {
                 ScrollPane scrollPane = new ScrollPane(sidebarContent);
                 scrollPane.setFitToWidth(true);
                 scrollPane.setFitToHeight(true);
-                scrollPane.setPadding(new Insets(0, 5, 5, 0));
+                scrollPane.setPadding(new Insets(0));
                 scrollPane.setStyle(
-                                "-fx-background-color: #252525; -fx-border-color: transparent; -fx-control-inner-background: #252525; -fx-background-radius: 0 12 12 0;");
+                                "-fx-background-color: " + Styles.BG_DARK + "; -fx-border-color: transparent; -fx-control-inner-background: " + Styles.BG_DARK + "; -fx-background-radius: 0 8 8 0;");
                 scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
                 scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
                 VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
                 VBox rightSidebar = new VBox();
                 if ("Dashboard".equals(activeTab)) {
-                    rightSidebar.setMinWidth(240);
-                    rightSidebar.setPrefWidth(280);
-                    rightSidebar.setMaxWidth(400);
+                    rightSidebar.setMinWidth(260);
+                    rightSidebar.setPrefWidth(300);
+                    rightSidebar.setMaxWidth(420);
                 } else {
-                    rightSidebar.setMinWidth(180);
-                    rightSidebar.setPrefWidth(220);
-                    rightSidebar.setMaxWidth(280);
+                    rightSidebar.setMinWidth(200);
+                    rightSidebar.setPrefWidth(240);
+                    rightSidebar.setMaxWidth(300);
                 }
                 rightSidebar.setStyle(Styles.RIGHT_SIDEBAR_STYLE);
                 rightSidebar.getChildren().add(scrollPane);
 
-                rightSidebar.setOnMouseMoved(event -> {
-                        double x = event.getX();
-                        double width = rightSidebar.getWidth();
-                        if (x > width - 20) {
-                                rightSidebar.setCursor(javafx.scene.Cursor.E_RESIZE);
-                        } else {
-                                rightSidebar.setCursor(javafx.scene.Cursor.DEFAULT);
-                        }
-                });
 
                 return rightSidebar;
         }

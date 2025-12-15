@@ -5,27 +5,31 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 public class FunkyLogSorter {
-    private static int MAX_LEN = 1200;
-
     private static boolean allowErrors = true;
     private static boolean allowWarnings = true;
     private static boolean allowLogs = true;
 
-    public static LinkedList<Message> errors = new LinkedList<>();
+    public static CopyOnWriteArrayList<Message> errors = new CopyOnWriteArrayList<>();
 
     private static String searchTerm = "";
 
-    public static LinkedList<Message> messages = new LinkedList<>();
-    public static LinkedList<Message> filtered = new LinkedList<>();
+    public static List<Message> messages = new ArrayList<>(10000);
+    public static List<Message> filtered = new ArrayList<>(10000);
+
+    private static final AtomicLong filterVersion = new AtomicLong(0);
+    private static volatile long lastFilteredVersion = -1;
 
     public static String log_file_directory = System.getProperty("user.dir") + "/logs846";
     public static FileWriter log_file;
@@ -41,80 +45,115 @@ public class FunkyLogSorter {
                     e.printStackTrace();
                 }
             }
-        }, 3000, 1000, TimeUnit.MILLISECONDS);
+        }, 3000, 2000, TimeUnit.MILLISECONDS);
+    }
+
+    public static long getFilterVersion() {
+        return filterVersion.get();
+    }
+
+    public static boolean hasNewData() {
+        long current = filterVersion.get();
+        if (current != lastFilteredVersion) {
+            lastFilteredVersion = current;
+            return true;
+        }
+        return false;
     }
 
     public static void clear() {
-        messages.clear();
-        filtered.clear();
+        synchronized (messages) {
+            messages.clear();
+        }
+        synchronized (filtered) {
+            filtered.clear();
+        }
+        filterVersion.incrementAndGet();
     }
 
     public static void reFilter() {
-        filtered.clear();
-
-        for (Message m : messages) {
-            if (!checkMessageBySearch(m)) {
-                continue;
-            } else if (allowLogs && m.isLog()) {
-                filtered.add(m);
-            } else if (allowWarnings && m.isWarning()) {
-                filtered.add(m);
-            } else if (allowErrors && m.isError()) {
-                filtered.add(m);
+        synchronized (filtered) {
+            filtered.clear();
+            synchronized (messages) {
+                for (Message m : messages) {
+                    if (!checkMessageBySearch(m)) {
+                        continue;
+                    } else if (allowLogs && m.isLog()) {
+                        filtered.add(m);
+                    } else if (allowWarnings && m.isWarning()) {
+                        filtered.add(m);
+                    } else if (allowErrors && m.isError()) {
+                        filtered.add(m);
+                    }
+                }
             }
         }
+        filterVersion.incrementAndGet();
     }
 
     private static boolean checkMessageBySearch(Message msg) {
-        if (searchTerm.equals(""))
+        if (searchTerm.isEmpty())
             return true;
 
-        return msg.getSender().contains(searchTerm) || msg.getContent().contains(searchTerm);
-    }
-
-    public static void trimMessages() {
-        int currentLength = messages.size();
-
-        if (currentLength <= MAX_LEN)
-            return;
-
-        for (int i = 0; i <= currentLength - MAX_LEN; i++) {
-            messages.removeFirst();
-        }
-
-        if (filtered.size() > MAX_LEN) {
-            reFilter();
-        }
+        String lowerSearch = searchTerm.toLowerCase();
+        return msg.getSender().toLowerCase().contains(lowerSearch) 
+            || msg.getContent().toLowerCase().contains(lowerSearch);
     }
 
     public static void addMessage(Message m) {
-        messages.add(m);
+        synchronized (messages) {
+            messages.add(m);
+        }
 
         if (log_file != null) {
             try {
                 log_file.write(m.toString() + "\n");
             } catch (IOException exc) {
-                exc.printStackTrace();
             }
-        } else {
-            System.out.println("Log file not open");
         }
 
         if (m.isError()) {
             errors.add(m);
         }
 
-        if (!checkMessageBySearch(m)) {
-
-        } else if (allowLogs && m.isLog()) {
-            filtered.add(m);
-        } else if (allowWarnings && m.isWarning()) {
-            filtered.add(m);
-        } else if (allowErrors && m.isError()) {
-            filtered.add(m);
+        if (checkMessageBySearch(m)) {
+            boolean shouldAdd = false;
+            if (allowLogs && m.isLog()) {
+                shouldAdd = true;
+            } else if (allowWarnings && m.isWarning()) {
+                shouldAdd = true;
+            } else if (allowErrors && m.isError()) {
+                shouldAdd = true;
+            }
+            
+            if (shouldAdd) {
+                synchronized (filtered) {
+                    filtered.add(m);
+                }
+                filterVersion.incrementAndGet();
+            }
         }
+    }
 
-        trimMessages();
+    public static List<Message> getFilteredSnapshot() {
+        synchronized (filtered) {
+            return new ArrayList<>(filtered);
+        }
+    }
+
+    public static int getFilteredSize() {
+        synchronized (filtered) {
+            return filtered.size();
+        }
+    }
+
+    public static Message getFilteredAt(int index) {
+        synchronized (filtered) {
+            if (index >= 0 && index < filtered.size()) {
+                return filtered.get(index);
+            }
+            return null;
+        }
     }
 
     public static void setErrorsAllowed(boolean allow) {
@@ -139,8 +178,10 @@ public class FunkyLogSorter {
 
     public static void logAllMessages() {
         System.out.println("\nSTART");
-        for (Message m : filtered) {
-            System.out.println(m);
+        synchronized (filtered) {
+            for (Message m : filtered) {
+                System.out.println(m);
+            }
         }
         System.out.println("END\n");
     }
@@ -174,9 +215,11 @@ public class FunkyLogSorter {
 
     public static String stringifyAllMessages() {
         StringBuilder result = new StringBuilder();
-        for (Message m : messages) {
-            result.append(m);
-            result.append("\n");
+        synchronized (messages) {
+            for (Message m : messages) {
+                result.append(m);
+                result.append("\n");
+            }
         }
         return result.toString();
     }

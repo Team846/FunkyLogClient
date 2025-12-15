@@ -5,6 +5,7 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.NetworkTableValue;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeItem;
@@ -41,38 +42,52 @@ public class SidebarNetworkTablesChooser {
         ArrayList<javafx.scene.Node> chooserElements = new ArrayList<>();
 
         Region topSpacing = new Region();
-        topSpacing.setMinHeight(15);
+        topSpacing.setMinHeight(12);
         chooserElements.add(topSpacing);
 
-        Text chooserLabel = new Text("Tree");
-        chooserLabel.setStyle(Styles.TEXT_STYLE + Styles.BOLD_TEXT);
+        Text chooserLabel = new Text("NetworkTables Tree");
+        chooserLabel.setStyle(Styles.SECTION_HEADER_STYLE);
         chooserElements.add(chooserLabel);
 
-        HBox searchContainer = new HBox(8);
+        Region afterTitleSpace = new Region();
+        afterTitleSpace.setMinHeight(8);
+        chooserElements.add(afterTitleSpace);
+
+        HBox searchContainer = new HBox(10);
         searchContainer.setAlignment(Pos.CENTER_LEFT);
+        searchContainer.setPadding(new Insets(0, 0, 8, 0));
 
         SVGPath searchIcon = new SVGPath();
         searchIcon.setContent(
                 "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z");
-        searchIcon.setFill(javafx.scene.paint.Color.valueOf("#AAAAAA"));
-        searchIcon.setStroke(javafx.scene.paint.Color.valueOf("#AAAAAA"));
+        searchIcon.setFill(javafx.scene.paint.Color.valueOf("#808080"));
+        searchIcon.setScaleX(0.8);
+        searchIcon.setScaleY(0.8);
 
         searchField = new TextField();
-        searchField.setPromptText("Search NetworkTables...");
+        searchField.setPromptText("Search...");
         searchField.setStyle(Styles.SEARCH_BAR_STYLE);
-        searchField.setPrefWidth(150);
-
-        Region searchSpacer = new Region();
-        HBox.setHgrow(searchSpacer, Priority.ALWAYS);
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
-        searchContainer.getChildren().addAll(searchIcon, searchField, searchSpacer);
+        searchField.focusedProperty().addListener((obs, old, focused) -> {
+            if (focused) {
+                searchField.setStyle(Styles.SEARCH_BAR_FOCUSED_STYLE);
+                searchIcon.setFill(Color.web("#FF8C00"));
+            } else {
+                searchField.setStyle(Styles.SEARCH_BAR_STYLE);
+                searchIcon.setFill(Color.web("#808080"));
+            }
+        });
+
+        searchContainer.getChildren().addAll(searchIcon, searchField);
         chooserElements.add(searchContainer);
 
         networkTablesTree = new TreeView<>();
         networkTablesTree.setStyle(
-                "-fx-background-color: #1A1A1A; -fx-border-color: #404040; -fx-border-width: 1px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+                "-fx-background-color: " + Styles.BG_DARKEST + "; -fx-border-color: " + Styles.BORDER_DARK + "; -fx-border-width: 1px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
         networkTablesTree.setRoot(createTreeRoot());
+        networkTablesTree.setMinHeight(200);
+        networkTablesTree.setPrefHeight(300);
 
         VBox treeContainer = new VBox();
         treeContainer.getChildren().add(networkTablesTree);
@@ -103,13 +118,13 @@ public class SidebarNetworkTablesChooser {
                     }
 
                     if (isEntry) {
-                        setStyle("-fx-text-fill: #4A9EFF; -fx-font-weight: normal;");
+                        setStyle(Styles.TREE_CELL_VALUE_STYLE);
                     } else if (isChooser) {
-                        setStyle("-fx-text-fill: #FF8C00; -fx-font-weight: bold;");
+                        setStyle(Styles.TREE_CELL_VALUE_STYLE.replace("normal", "bold"));
                     } else if (isField) {
-                        setStyle("-fx-text-fill: #238636; -fx-font-weight: bold;");
+                        setStyle(Styles.TREE_CELL_FIELD_STYLE);
                     } else {
-                        setStyle("-fx-text-fill: #C9D1D9; -fx-font-weight: normal;");
+                        setStyle(Styles.TREE_CELL_DEFAULT_STYLE);
                     }
                 }
             }
@@ -358,14 +373,12 @@ public class SidebarNetworkTablesChooser {
 
                         Text dragText = new Text(displayValue);
                         dragText.setFont(Font.font(12));
-                        dragText.setFill(Color.BLUE);
-                        dragText.setStyle(
-                                "-fx-background-color: rgba(0,0,0,0.8); -fx-padding: 4px 8px; -fx-background-radius: 4px;");
+                        dragText.setFill(Color.WHITE);
 
                         javafx.scene.Group dragGroup = new javafx.scene.Group();
                         javafx.scene.layout.StackPane dragPane = new javafx.scene.layout.StackPane(dragText);
                         dragPane.setStyle(
-                                "-fx-background-color: rgba(74, 158, 255, 0.9); -fx-padding: 6px 10px; -fx-background-radius: 6px;");
+                                "-fx-background-color: #FF8C00; -fx-padding: 6px 12px; -fx-background-radius: 6px;");
                         dragGroup.getChildren().add(dragPane);
 
                         javafx.scene.SnapshotParameters params = new javafx.scene.SnapshotParameters();

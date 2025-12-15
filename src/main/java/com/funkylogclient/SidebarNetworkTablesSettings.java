@@ -4,10 +4,12 @@ import java.util.ArrayList;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -25,64 +27,76 @@ public class SidebarNetworkTablesSettings {
 
         ArrayList<Node> networkTablesSettings = new ArrayList<Node>();
 
-        Region topLinedSpacing = new Region();
-        topLinedSpacing.setMinHeight(15);
-        topLinedSpacing
-                .setStyle("-fx-border-width: 1px; -fx-border-color: transparent transparent #404040 transparent");
-        networkTablesSettings.add(topLinedSpacing);
+        Region topDivider = new Region();
+        topDivider.setMinHeight(1);
+        topDivider.setPrefHeight(1);
+        topDivider.setStyle("-fx-background-color: " + Styles.BORDER_DARK + ";");
+        networkTablesSettings.add(topDivider);
 
         Region topSpacing = new Region();
-        topSpacing.setMinHeight(15);
+        topSpacing.setMinHeight(12);
         networkTablesSettings.add(topSpacing);
 
-        Text ntTitle = new Text("NetworkTables:");
-        ntTitle.setStyle("-fx-font-size: 16px; -fx-fill: #FFFFFF; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+        Text ntTitle = new Text("NetworkTables");
+        ntTitle.setStyle(Styles.SECTION_HEADER_STYLE);
         networkTablesSettings.add(ntTitle);
 
-        VBox statusContainer = new VBox(5);
-        statusContainer.setStyle("-fx-background-color: #1A1A1A; -fx-background-radius: 5; -fx-padding: 8;");
+        Region afterTitleSpace = new Region();
+        afterTitleSpace.setMinHeight(8);
+        networkTablesSettings.add(afterTitleSpace);
 
-        HBox statusRow = new HBox(8);
+        VBox statusContainer = new VBox(6);
+        statusContainer.setStyle("-fx-background-color: " + Styles.BG_DARKEST + "; -fx-background-radius: 8px; -fx-padding: 12px;");
+
+        HBox statusRow = new HBox(10);
         statusRow.setAlignment(Pos.CENTER_LEFT);
 
-        statusDot = new Circle(6, Color.RED);
-        statusDot.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 2, 0, 0, 0);");
+        statusDot = new Circle(5, Color.web("#F85149"));
+        statusDot.setStyle("-fx-effect: dropshadow(gaussian, rgba(248,81,73,0.4), 6, 0, 0, 0);");
 
         statusText = new Text("Disconnected");
-        statusText
-                .setStyle("-fx-font-size: 12px; -fx-fill: #CCCCCC; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+        statusText.setStyle("-fx-font-size: 13px; -fx-fill: " + Styles.TEXT_PRIMARY + "; -fx-font-weight: bold; -fx-font-family: " + Styles.FONT_FAMILY + ";");
 
         statusRow.getChildren().addAll(statusDot, statusText);
         statusContainer.getChildren().add(statusRow);
 
-        latencyText = new Text("Latency: 0ms");
-        latencyText
-                .setStyle("-fx-font-size: 11px; -fx-fill: #AAAAAA; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
-        statusContainer.getChildren().add(latencyText);
+        HBox statsRow = new HBox(16);
+        statsRow.setAlignment(Pos.CENTER_LEFT);
+        statsRow.setPadding(new Insets(4, 0, 0, 0));
 
-        Text serverText = new Text("Server: " + UDPClient.serverIP);
-        serverText
-                .setStyle("-fx-font-size: 11px; -fx-fill: #AAAAAA; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
-        statusContainer.getChildren().add(serverText);
+        latencyText = new Text("Latency: --");
+        latencyText.setStyle("-fx-font-size: 11px; -fx-fill: " + Styles.TEXT_MUTED + "; -fx-font-family: " + Styles.FONT_FAMILY + ";");
+
+        Text serverText = new Text("→ " + UDPClient.serverIP);
+        serverText.setStyle("-fx-font-size: 11px; -fx-fill: " + Styles.TEXT_MUTED + "; -fx-font-family: " + Styles.FONT_FAMILY + ";");
+
+        statsRow.getChildren().addAll(latencyText, serverText);
+        statusContainer.getChildren().add(statsRow);
 
         networkTablesSettings.add(statusContainer);
 
-        HBox buttonContainer = new HBox(5);
+        Region buttonSpacing = new Region();
+        buttonSpacing.setMinHeight(8);
+        networkTablesSettings.add(buttonSpacing);
+
+        HBox buttonContainer = new HBox(8);
         buttonContainer.setAlignment(Pos.CENTER);
 
         Button connectButton = new Button("Connect");
-        connectButton.setStyle(Styles.SMALL_BUTTON_STYLE);
-        connectButton.setMaxWidth(Double.MAX_VALUE);
+        connectButton.setStyle(Styles.ACCENT_BUTTON_STYLE);
         connectButton.setOnAction(connectButtonListener);
-        connectButton.setOnMouseEntered(e -> connectButton.setStyle(Styles.SMALL_BUTTON_HOVER_STYLE));
-        connectButton.setOnMouseExited(e -> connectButton.setStyle(Styles.SMALL_BUTTON_STYLE));
+        connectButton.setOnMouseEntered(e -> connectButton.setStyle(Styles.ACCENT_BUTTON_HOVER_STYLE));
+        connectButton.setOnMouseExited(e -> connectButton.setStyle(Styles.ACCENT_BUTTON_STYLE));
+        HBox.setHgrow(connectButton, Priority.ALWAYS);
+        connectButton.setMaxWidth(Double.MAX_VALUE);
 
         Button disconnectButton = new Button("Disconnect");
         disconnectButton.setStyle(Styles.SMALL_BUTTON_STYLE);
-        disconnectButton.setMaxWidth(Double.MAX_VALUE);
         disconnectButton.setOnAction(disconnectButtonListener);
         disconnectButton.setOnMouseEntered(e -> disconnectButton.setStyle(Styles.SMALL_BUTTON_HOVER_STYLE));
         disconnectButton.setOnMouseExited(e -> disconnectButton.setStyle(Styles.SMALL_BUTTON_STYLE));
+        HBox.setHgrow(disconnectButton, Priority.ALWAYS);
+        disconnectButton.setMaxWidth(Double.MAX_VALUE);
 
         buttonContainer.getChildren().addAll(connectButton, disconnectButton);
         networkTablesSettings.add(buttonContainer);
@@ -92,13 +106,23 @@ public class SidebarNetworkTablesSettings {
 
     public static void updateStatus(boolean connected, String status, double latency) {
         if (statusDot != null) {
-            statusDot.setFill(connected ? Color.GREEN : Color.RED);
+            if (connected) {
+                statusDot.setFill(Color.web(Styles.ACCENT_YELLOW));
+                statusDot.setStyle(Styles.STATUS_DOT_CONNECTED);
+            } else {
+                statusDot.setFill(Color.web(Styles.ACCENT_ERROR));
+                statusDot.setStyle(Styles.STATUS_DOT_DISCONNECTED);
+            }
         }
         if (statusText != null) {
             statusText.setText(status);
         }
         if (latencyText != null) {
-            latencyText.setText(String.format("Latency: %.1fms", latency));
+            if (connected) {
+                latencyText.setText(String.format("Latency: %.0fms", latency));
+            } else {
+                latencyText.setText("Latency: --");
+            }
         }
     }
 }
