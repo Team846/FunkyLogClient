@@ -1,9 +1,81 @@
 {
   "widgets" : [ {
-    "key" : "SmartDashboard/Drivetrain",
-    "type" : "fieldview",
-    "title" : "Drivetrain",
+    "key" : "SmartDashboard/Intake/Speed",
+    "type" : "number",
+    "title" : "Speed",
     "col" : 1,
     "row" : 0
+  }, {
+    "key" : "Preferences/ElevatorPreset",
+    "type" : "number",
+    "title" : "ElevatorPreset",
+    "col" : 3,
+    "row" : 4
+  }, {
+    "key" : "Preferences/MaxSpeed",
+    "type" : "number",
+    "title" : "MaxSpeed",
+    "col" : 2,
+    "row" : 5
+  }, {
+    "key" : "SmartDashboard/Motors/Temperature",
+    "type" : "number",
+    "title" : "Temperature",
+    "col" : 4,
+    "row" : 4
+  }, {
+    "key" : "SmartDashboard/Arm/Angle",
+    "type" : "number",
+    "title" : "Angle",
+    "col" : 1,
+    "row" : 3
+  }, {
+    "key" : "SmartDashboard/Robot/BatteryVoltage",
+    "type" : "number",
+    "title" : "BatteryVoltage",
+    "col" : 3,
+    "row" : 2
+  }, {
+    "key" : "SmartDashboard/Auto",
+    "type" : "autoselector",
+    "title" : "Auto",
+    "col" : 3,
+    "row" : 0
+  }, {
+    "key" : "Preferences/ShooterRPM",
+    "type" : "number",
+    "title" : "ShooterRPM",
+    "col" : 0,
+    "row" : 4
+  }, {
+    "key" : "SmartDashboard/Shooter/Ready",
+    "type" : "boolean",
+    "title" : "Ready",
+    "col" : 0,
+    "row" : 2
+  }, {
+    "key" : "SmartDashboard/Intake/HasPiece",
+    "type" : "boolean",
+    "title" : "HasPiece",
+    "col" : 4,
+    "row" : 1
+  }, {
+    "key" : "Preferences/AutoAim",
+    "type" : "boolean",
+    "title" : "AutoAim",
+    "col" : 2,
+    "row" : 4
+  }, {
+    "key" : "Preferences/MatchType",
+    "type" : "boolean",
+    "title" : "MatchType",
+    "col" : 2,
+    "row" : 3
+  }, {
+    "key" : "SmartDashboard/Motors/Current",
+    "type" : "number",
+    "title" : "Current",
+    "col" : 4,
+    "row" : 5
   } ]
 }

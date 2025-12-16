@@ -2,6 +2,7 @@ package com.funkylogclient;
 
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
@@ -24,6 +25,7 @@ public class BooleanWidget extends DashboardWidget {
     public BooleanWidget(String title, String key) {
         super(title, key);
         this.isEditable = key.startsWith("Preferences/");
+        contentBox.setPadding(new javafx.geometry.Insets(6));
         createBooleanDisplay();
     }
 
@@ -37,7 +39,7 @@ public class BooleanWidget extends DashboardWidget {
                 if (toggleLabel != null)
                     toggleLabel.setText(isNow ? "TRUE" : "FALSE");
                 if (toggleLabel != null)
-                    toggleLabel.setFill(isNow ? Color.web("#FFD700") : Color.web("#F85149"));
+                    toggleLabel.setFill(isNow ? Color.web("#4CAF50") : Color.web("#F85149"));
             });
 
             toggleLabel = new Text("FALSE");
@@ -47,24 +49,27 @@ public class BooleanWidget extends DashboardWidget {
 
             javafx.scene.layout.HBox h = new javafx.scene.layout.HBox(10);
             h.setAlignment(Pos.CENTER);
+            h.setFillHeight(true);
             h.getChildren().addAll(toggle, toggleLabel);
 
-            VBox booleanContainer = new VBox(12);
+            VBox booleanContainer = new VBox(4);
             booleanContainer.setAlignment(Pos.CENTER);
+            booleanContainer.setFillWidth(true);
             booleanContainer.getChildren().add(h);
+            VBox.setVgrow(booleanContainer, Priority.ALWAYS);
             contentBox.getChildren().add(booleanContainer);
         } else {
-            indicator = new Rectangle(56, 56);
+            indicator = new Rectangle(40, 40);
             indicator.setFill(Color.web(Styles.ACCENT_ERROR));
             indicator.setStroke(Color.web(Styles.BORDER_DARK));
-            indicator.setStrokeWidth(2);
-            indicator.setArcWidth(14);
-            indicator.setArcHeight(14);
+            indicator.setStrokeWidth(1.5);
+            indicator.setArcWidth(10);
+            indicator.setArcHeight(10);
 
             statusText = new Text("FALSE");
             statusText.setFill(Color.WHITE);
             statusText.setStyle(
-                    "-fx-font-size: 12px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+                    "-fx-font-size: 10px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
 
             indicatorStack = new StackPane();
             indicatorStack.getChildren().addAll(indicator, statusText);
@@ -76,9 +81,11 @@ public class BooleanWidget extends DashboardWidget {
                 indicator.setStroke(Color.web(Styles.BORDER_DARK));
             });
 
-            VBox booleanContainer = new VBox(12);
+            VBox booleanContainer = new VBox(4);
             booleanContainer.setAlignment(Pos.CENTER);
+            booleanContainer.setFillWidth(true);
             booleanContainer.getChildren().addAll(indicatorStack);
+            VBox.setVgrow(booleanContainer, Priority.ALWAYS);
 
             contentBox.getChildren().add(booleanContainer);
         }
@@ -118,14 +125,14 @@ public class BooleanWidget extends DashboardWidget {
                 toggle.setSelected(boolValue);
                 if (toggleLabel != null) {
                     toggleLabel.setText(boolValue ? "TRUE" : "FALSE");
-                    toggleLabel.setFill(boolValue ? Color.web("#FFD700") : Color.web("#F85149"));
+                    toggleLabel.setFill(boolValue ? Color.web("#4CAF50") : Color.web("#F85149"));
                 }
             }
             return;
         }
 
         if (boolValue) {
-            indicator.setFill(Color.web("#FFD700"));
+            indicator.setFill(Color.web("#4CAF50"));
             statusText.setText("TRUE");
         } else {
             indicator.setFill(Color.web("#F85149"));

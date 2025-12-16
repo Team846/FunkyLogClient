@@ -454,6 +454,7 @@ class NetworkTablesServer:
             self.inst.setServer("FunkyLogTestServer")
             
             self.table = self.inst.getTable("SmartDashboard")
+            self.preferences_table = self.inst.getTable("Preferences")
             self.running = True
             
             # Start data publishing thread
@@ -461,7 +462,7 @@ class NetworkTablesServer:
             self.publish_thread.start()
             
             print(f"[NT] Server identity: {self.inst.getServer()}")
-            print(f"[NT] Publishing to SmartDashboard table")
+            print(f"[NT] Publishing to SmartDashboard and Preferences tables")
             return True
             
         except Exception as e:
@@ -477,9 +478,9 @@ class NetworkTablesServer:
             self.inst.stopServer()
             
     def _publish_data(self):
-        """Publish simulated robot data to SmartDashboard."""
+        """Publish simulated robot data to SmartDashboard and Preferences."""
         # Create publishers for various data types
-        if not self.table:
+        if not self.table or not self.preferences_table:
             return
             
         # Robot state
@@ -518,16 +519,48 @@ class NetworkTablesServer:
         arm_angle = self.table.getDoubleTopic("Arm/Angle").publish()
         elevator_height = self.table.getDoubleTopic("Elevator/Height").publish()
         
-        # Auto selector
-        auto_options = self.table.getStringArrayTopic("Auto/Options").publish()
-        auto_selected = self.table.getStringTopic("Auto/Selected").publish()
-        auto_active = self.table.getStringTopic("Auto/Active").publish()
+        # Auto selector - use lowercase keys as expected by AutoSelectorWidget
+        auto_table = self.table.getSubTable("Auto")
+        auto_options_entry = auto_table.getStringArrayTopic("options").publish()
+        auto_selected_entry = auto_table.getStringTopic("selected").publish()
+        auto_active_entry = auto_table.getStringTopic("active").publish()
         
-        # Set auto options
+        # Preferences table - editable values
+        pref_max_speed = self.preferences_table.getDoubleTopic("MaxSpeed").publish()
+        pref_shooter_rpm = self.preferences_table.getDoubleTopic("ShooterRPM").publish()
+        pref_auto_aim = self.preferences_table.getBooleanTopic("AutoAim").publish()
+        pref_vision_enabled = self.preferences_table.getBooleanTopic("VisionEnabled").publish()
+        pref_intake_speed = self.preferences_table.getDoubleTopic("IntakeSpeed").publish()
+        pref_arm_preset_angle = self.preferences_table.getDoubleTopic("ArmPresetAngle").publish()
+        pref_elevator_preset = self.preferences_table.getDoubleTopic("ElevatorPreset").publish()
+        pref_team_number = self.preferences_table.getIntegerTopic("TeamNumber").publish()
+        pref_match_type = self.preferences_table.getStringTopic("MatchType").publish()
+        
+        # Initialize auto options - these can change over time
         auto_list = ["Left 3 Piece", "Center 2 Piece", "Right 3 Piece", "Just Leave", "Do Nothing"]
-        auto_options.set(auto_list)
-        auto_selected.set(auto_list[0])
-        auto_active.set(auto_list[0])
+        auto_options_entry.set(auto_list)
+        current_selected = auto_list[0]
+        current_active = auto_list[0]
+        auto_selected_entry.set(current_selected)
+        auto_active_entry.set(current_active)
+        
+        # Track when to update auto options
+        auto_options_update_counter = 0
+        
+        # Initialize preferences with default values
+        pref_max_speed.set(3.5)
+        pref_shooter_rpm.set(4500.0)
+        pref_auto_aim.set(True)
+        pref_vision_enabled.set(True)
+        pref_intake_speed.set(0.8)
+        pref_arm_preset_angle.set(45.0)
+        pref_elevator_preset.set(0.5)
+        pref_team_number.set(846)
+        pref_match_type.set("Practice")
+        
+        # Subscribe to auto/selected to update auto/active when client changes it
+        auto_selected_subscriber = auto_table.getStringTopic("selected").subscribe(current_selected)
+        last_selected_value = current_selected
         
         # Create smooth value generators for all numeric values
         # These will wander randomly but smoothly within their ranges
@@ -561,8 +594,69 @@ class NetworkTablesServer:
         
         print("[NT] Publishing smooth random values to NetworkTables...")
         
+        # Subscribe to preferences to detect client changes (with default values)
+        # Preferences are static - they only change when the client edits them
+        pref_max_speed_sub = self.preferences_table.getDoubleTopic("MaxSpeed").subscribe(3.5)
+        pref_shooter_rpm_sub = self.preferences_table.getDoubleTopic("ShooterRPM").subscribe(4500.0)
+        pref_intake_speed_sub = self.preferences_table.getDoubleTopic("IntakeSpeed").subscribe(0.8)
+        pref_arm_angle_sub = self.preferences_table.getDoubleTopic("ArmPresetAngle").subscribe(45.0)
+        pref_elevator_sub = self.preferences_table.getDoubleTopic("ElevatorPreset").subscribe(0.5)
+        pref_auto_aim_sub = self.preferences_table.getBooleanTopic("AutoAim").subscribe(True)
+        pref_vision_enabled_sub = self.preferences_table.getBooleanTopic("VisionEnabled").subscribe(True)
+        pref_team_number_sub = self.preferences_table.getIntegerTopic("TeamNumber").subscribe(846)
+        pref_match_type_sub = self.preferences_table.getStringTopic("MatchType").subscribe("Practice")
+        
         while self.running:
             t = time.time() - start_time
+            
+            # Check for client changes to auto/selected and update auto/active accordingly
+            try:
+                # Check both the entry directly and the subscriber
+                new_selected_entry = auto_selected_entry.get()
+                new_selected_sub = auto_selected_subscriber.get()
+                
+                # Use subscriber value if available, otherwise entry value
+                new_selected = new_selected_sub if new_selected_sub else new_selected_entry
+                
+                if new_selected and new_selected != last_selected_value and new_selected in auto_list:
+                    # Client changed the selection - update active to match after a short delay
+                    # (simulating robot code processing the selection)
+                    current_active = new_selected
+                    auto_active_entry.set(current_active)
+                    last_selected_value = new_selected
+                    print(f"[NT] Auto mode changed: {new_selected} -> active")
+            except Exception:
+                pass
+            
+            # Check for client changes to preferences and republish them
+            # Preferences are static - we just read what the client sets and republish
+            try:
+                client_max_speed = pref_max_speed_sub.get()
+                if client_max_speed is not None:
+                    pref_max_speed.set(client_max_speed)
+                    
+                client_shooter_rpm = pref_shooter_rpm_sub.get()
+                if client_shooter_rpm is not None:
+                    pref_shooter_rpm.set(client_shooter_rpm)
+                    
+                client_intake_speed = pref_intake_speed_sub.get()
+                if client_intake_speed is not None:
+                    pref_intake_speed.set(client_intake_speed)
+                    
+                client_arm_angle = pref_arm_angle_sub.get()
+                if client_arm_angle is not None:
+                    pref_arm_preset_angle.set(client_arm_angle)
+                    
+                client_elevator = pref_elevator_sub.get()
+                if client_elevator is not None:
+                    pref_elevator_preset.set(client_elevator)
+            except Exception:
+                pass
+            
+            # Republish auto options periodically (every 10 seconds) to ensure they're available
+            auto_options_update_counter += 1
+            if auto_options_update_counter % 200 == 0:  # Every 10 seconds at 20Hz
+                auto_options_entry.set(auto_list)
             
             # Cycle through modes every 30 seconds
             mode_cycle += 1
@@ -576,6 +670,16 @@ class NetworkTablesServer:
             robot_mode.set(modes[current_mode])
             match_time.set(max(0, 150 - (t % 150)))  # 2.5 minute matches
             battery_voltage.set(round(sv_battery.update(), 2))
+            
+            # Read and republish preferences (client can edit these, but they stay static)
+            # Preferences only change when explicitly set by the client
+            try:
+                pref_auto_aim.set(pref_auto_aim_sub.get())
+                pref_vision_enabled.set(pref_vision_enabled_sub.get())
+                pref_team_number.set(int(pref_team_number_sub.get()))
+                pref_match_type.set(pref_match_type_sub.get())
+            except Exception:
+                pass
             
             # Motor/sensor data - always update (smooth wandering)
             motor_temp.set(round(sv_motor_temp.update(), 1))

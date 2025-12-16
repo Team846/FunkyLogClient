@@ -75,10 +75,10 @@ public class Styles {
     public static final String LABEL_MED = "-fx-text-fill: " + TEXT_PRIMARY + "; -fx-font-size: 14px; -fx-font-family: " + FONT_FAMILY + ";";
     public static final String LABEL_TITLE = "-fx-font-size: 18px; -fx-fill: " + TEXT_WHITE + "; -fx-font-weight: bold; -fx-font-family: " + FONT_FAMILY + ";";
 
-    public static final String SEARCH_BAR_STYLE = "-fx-background-color: " + BG_MEDIUM + "; -fx-text-fill: " + TEXT_PRIMARY + "; -fx-border-color: " + BORDER_DARK + "; -fx-border-width: 1px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 16 8 16; -fx-font-size: 13px; -fx-font-family: " + FONT_FAMILY + ";";
-    public static final String SEARCH_BAR_FOCUSED_STYLE = "-fx-background-color: " + BG_MEDIUM + "; -fx-text-fill: " + TEXT_PRIMARY + "; -fx-border-color: " + ACCENT_PRIMARY + "; -fx-border-width: 2px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 7 15 7 15; -fx-font-size: 13px; -fx-font-family: " + FONT_FAMILY + ";";
+    public static final String SEARCH_BAR_STYLE = "-fx-background-color: " + BG_LIGHT + "; -fx-text-fill: " + TEXT_PRIMARY + "; -fx-border-color: " + BORDER_MEDIUM + "; -fx-border-width: 1px; -fx-border-radius: 10px; -fx-background-radius: 10px; -fx-padding: 10 18 10 18; -fx-font-size: 14px; -fx-font-family: " + FONT_FAMILY + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0, 0, 1);";
+    public static final String SEARCH_BAR_FOCUSED_STYLE = "-fx-background-color: " + BG_LIGHT + "; -fx-text-fill: " + TEXT_WHITE + "; -fx-border-color: " + ACCENT_PRIMARY + "; -fx-border-width: 2px; -fx-border-radius: 10px; -fx-background-radius: 10px; -fx-padding: 9 17 9 17; -fx-font-size: 14px; -fx-font-family: " + FONT_FAMILY + "; -fx-effect: dropshadow(gaussian, rgba(255,140,0,0.3), 6, 0, 0, 2);";
 
-    public static final String SEARCH_CONTAINER_STYLE = "-fx-background-color: " + BG_DARK + "; -fx-background-radius: 12px; -fx-padding: 16 20 16 20; -fx-border-color: " + BORDER_DARK + "; -fx-border-width: 1px; -fx-border-radius: 12px;";
+    public static final String SEARCH_CONTAINER_STYLE = "-fx-background-color: transparent; -fx-background-radius: 0; -fx-padding: 12 16 12 16; -fx-border-color: transparent; -fx-border-width: 0;";
 
     public static final String SECTION_HEADER_STYLE = "-fx-font-size: 16px; -fx-fill: " + TEXT_WHITE + "; -fx-font-weight: bold; -fx-font-family: " + FONT_FAMILY + ";";
 

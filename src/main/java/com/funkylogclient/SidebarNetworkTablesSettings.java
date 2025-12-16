@@ -64,10 +64,10 @@ public class SidebarNetworkTablesSettings {
         statsRow.setAlignment(Pos.CENTER_LEFT);
         statsRow.setPadding(new Insets(4, 0, 0, 0));
 
-        latencyText = new Text("Latency: --");
+        latencyText = new Text("Latency: 0.0ms");
         latencyText.setStyle("-fx-font-size: 11px; -fx-fill: " + Styles.TEXT_MUTED + "; -fx-font-family: " + Styles.FONT_FAMILY + ";");
 
-        Text serverText = new Text("→ " + UDPClient.serverIP);
+        Text serverText = new Text("To: " + UDPClient.serverIP);
         serverText.setStyle("-fx-font-size: 11px; -fx-fill: " + Styles.TEXT_MUTED + "; -fx-font-family: " + Styles.FONT_FAMILY + ";");
 
         statsRow.getChildren().addAll(latencyText, serverText);

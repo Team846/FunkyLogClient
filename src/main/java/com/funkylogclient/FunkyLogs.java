@@ -31,7 +31,7 @@ import javafx.util.Duration;
 
 public class FunkyLogs extends Application {
 
-    public static final String APP_NAME = "FunkyLogs v2.0.8";
+    public static final String APP_NAME = "MonkeySee v2.0.8";
 
     private StackPane rootStack;
     private BorderPane root;
@@ -54,6 +54,7 @@ public class FunkyLogs extends Application {
 
 
     private static long lastKnownVersion = -1;
+    private static int lastScrollIndex = -1;
 
     @Override
     public void start(Stage primaryStage) {
@@ -100,7 +101,7 @@ public class FunkyLogs extends Application {
 
         rootStack = new StackPane();
         rootStack.getStyleClass().add("root");
-        
+
         root = new BorderPane();
         rootStack.getChildren().add(root);
         
@@ -109,31 +110,35 @@ public class FunkyLogs extends Application {
         root.setTop(createUtilityBar(primaryStage));
 
         TabPane tabPane = new TabPane();
+        tabPane.setNodeOrientation(javafx.geometry.NodeOrientation.RIGHT_TO_LEFT);
         tabPane.setStyle(
                 "-fx-background-color: " + Styles.BG_DARKEST + "; -fx-border-color: " + Styles.BORDER_DARK + "; -fx-border-width: 1px; -fx-tab-min-width: 80px; -fx-tab-min-height: 24px; -fx-tab-max-height: 24px; -fx-control-inner-background: " + Styles.BG_DARKEST + "; -fx-background-insets: 0; -fx-tab-area-background: " + Styles.BG_DARKEST + "; -fx-tab-header-background: " + Styles.BG_DARKEST + "; -fx-tab-header-area-background: " + Styles.BG_DARKEST + "; -fx-content-area-background: " + Styles.BG_DARKEST + "; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-tab-header-area-spacing: 20px;");
         tabPane.getStyleClass().add("tab-pane");
 
-        Tab logsTab = new Tab("Logs");
+        Tab logsTab = new Tab("Forestry");
         logsTab.setClosable(false);
         logsTab.setStyle(
                 "-fx-background-color: #404040; -fx-text-fill: #E0E0E0; -fx-padding: 0px 2px; -fx-font-size: 11px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
 
         VBox logsContent = new VBox();
+        logsContent.setNodeOrientation(javafx.geometry.NodeOrientation.LEFT_TO_RIGHT);
         logsContent.setStyle(Styles.CENTER);
         logsContent.setPadding(new Insets(10, 10, 10, 10));
 
         VBox centerSearch = new VBox();
         centerSearch.setStyle(Styles.SEARCH_CONTAINER_STYLE);
 
-        HBox withLabelToo = new HBox(15);
-        withLabelToo.setAlignment(Pos.CENTER_LEFT);
+        HBox withLabelToo = new HBox(12);
+        withLabelToo.setAlignment(Pos.CENTER_RIGHT);
 
         Label searchLabel = new Label("Search:");
-        searchLabel.setStyle(Styles.LABEL_MED + Styles.BOLD_TEXT);
+        searchLabel.setStyle("-fx-text-fill: " + Styles.TEXT_SECONDARY + "; -fx-font-size: 14px; -fx-font-weight: bold; -fx-font-family: " + Styles.FONT_FAMILY + ";");
 
         TextField searchBar = new TextField();
         searchBar.setStyle(Styles.SEARCH_BAR_STYLE);
         searchBar.setPromptText("Search logs...");
+        searchBar.setPrefWidth(280);
+        searchBar.setMaxWidth(280);
 
         searchBar.textProperty().addListener((observable, prevValue, newValue) -> {
             FunkyLogSorter.changeSearchTerm(newValue);
@@ -149,8 +154,7 @@ public class FunkyLogs extends Application {
 
         Region searchSpacer = new Region();
         HBox.setHgrow(searchSpacer, Priority.ALWAYS);
-        HBox.setHgrow(searchBar, Priority.ALWAYS);
-        withLabelToo.getChildren().addAll(searchLabel, searchBar, searchSpacer);
+        withLabelToo.getChildren().addAll(searchSpacer, searchLabel, searchBar);
         centerSearch.getChildren().add(withLabelToo);
         logsContent.getChildren().add(centerSearch);
 
@@ -158,6 +162,8 @@ public class FunkyLogs extends Application {
         messageListView = new ListView<>(messageList);
         messageListView.setStyle("-fx-background-color: " + Styles.BG_DARKEST + "; -fx-border-color: transparent;");
         messageListView.setFixedCellSize(-1);
+        messageListView.setCache(true);
+        messageListView.setCacheShape(true);
 
         messageListView.setCellFactory(new Callback<ListView<Message>, ListCell<Message>>() {
             @Override
@@ -171,7 +177,7 @@ public class FunkyLogs extends Application {
         logsContent.getChildren().add(messageListView);
         logsTab.setContent(logsContent);
 
-        Tab dashboardTab = new Tab("Dashboard");
+        Tab dashboardTab = new Tab("BananaBits");
         dashboardTab.setClosable(false);
         dashboardTab.setStyle(
                 "-fx-background-color: #404040; -fx-text-fill: #E0E0E0; -fx-padding: 0px 2px; -fx-font-size: 11px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
@@ -179,11 +185,12 @@ public class FunkyLogs extends Application {
         dashboard = new Dashboard();
         dashboardTab.setContent(dashboard.getContainer());
 
-        tabPane.getTabs().addAll(logsTab, dashboardTab);
+        tabPane.getTabs().addAll(dashboardTab, logsTab);
+        tabPane.getSelectionModel().select(logsTab);
 
         root.setCenter(tabPane);
 
-        String[] activeTab = { "Logs" };
+        String[] activeTab = { "Forestry" };
         VBox sidebar = RightSidebar.getRightSidebar(getClass().getResource("logo.png"),
                 getClass().getResource("exit.png"), primaryStage,
                 (observable, prev, value) -> {
@@ -230,6 +237,8 @@ public class FunkyLogs extends Application {
             if (dashboard != null) {
                 dashboard.shutdown();
             }
+            SidebarNetworkTablesChooser.shutdown();
+            Platform.exit();
         });
         primaryStage.show();
 
@@ -254,7 +263,7 @@ public class FunkyLogs extends Application {
                     if (isCancelled()) {
                         break;
                     }
-                    Thread.sleep(150);
+                    Thread.sleep(50);
                     try {
                         long currentVersion = FunkyLogSorter.getFilterVersion();
                         if (currentVersion != lastKnownVersion) {
@@ -265,11 +274,11 @@ public class FunkyLogs extends Application {
                         if (!FunkyLogSorter.errors.isEmpty()) {
                             List<Message> errorsCopy = new ArrayList<>(FunkyLogSorter.errors);
                             FunkyLogSorter.errors.clear();
-                            Platform.runLater(() -> {
+                        Platform.runLater(() -> {
                                 for (Message x : errorsCopy) {
                                     NotificationManager.getInstance().showError(x.getSender(), x.getContent());
-                                }
-                            });
+                            }
+                        });
                         }
                     } catch (Exception exc) {
                         System.out.println(exc);
@@ -285,29 +294,43 @@ public class FunkyLogs extends Application {
     }
 
     private static void updateMessageList() {
-        Platform.runLater(() -> {
-            java.util.List<Message> snapshot = FunkyLogSorter.getFilteredSnapshot();
-            
-            int currentSize = messageList.size();
-            int newSize = snapshot.size();
-            
-            if (newSize == 0) {
+        if (Platform.isFxApplicationThread()) {
+            updateMessageListInternal();
+        } else {
+            Platform.runLater(() -> updateMessageListInternal());
+        }
+    }
+    
+    private static void updateMessageListInternal() {
+        java.util.List<Message> snapshot = FunkyLogSorter.getFilteredSnapshot();
+        
+        int currentSize = messageList.size();
+        int newSize = snapshot.size();
+        
+        if (newSize == 0) {
+            if (currentSize > 0) {
                 messageList.clear();
-                return;
             }
-            
-            if (currentSize == 0 || newSize < currentSize) {
-                messageList.setAll(snapshot);
-            } else {
-                for (int i = currentSize; i < newSize; i++) {
-                    messageList.add(snapshot.get(i));
-                }
+            return;
+        }
+        
+        if (currentSize == 0 || newSize < currentSize || Math.abs(newSize - currentSize) > 100) {
+            messageList.setAll(snapshot);
+        } else {
+            for (int i = currentSize; i < newSize; i++) {
+                messageList.add(snapshot.get(i));
             }
-            
-            if (auto_scroll && newSize > 0) {
-                messageListView.scrollTo(newSize - 1);
+        }
+        
+        if (auto_scroll && newSize > currentSize) {
+            int targetIndex = newSize - 1;
+            if (targetIndex != lastScrollIndex) {
+                messageListView.scrollTo(targetIndex);
+                lastScrollIndex = targetIndex;
             }
-        });
+        } else if (!auto_scroll) {
+            lastScrollIndex = -1;
+        }
     }
 
     private void setStageSize(Stage stage) {
@@ -568,8 +591,8 @@ public class FunkyLogs extends Application {
 
         javafx.event.EventHandler<javafx.scene.input.MouseEvent> releaseHandler = (event) -> {
             if (isResizing[0]) {
-                isResizing[0] = false;
-                resizeType[0] = null;
+            isResizing[0] = false;
+            resizeType[0] = null;
             }
         };
 
@@ -596,28 +619,55 @@ public class FunkyLogs extends Application {
     }
 
     private HBox createUtilityBar(Stage primaryStage) {
-        HBox utilityBar = new HBox(10);
-        utilityBar.setPadding(new Insets(8, 15, 5, 15));
+        HBox utilityBar = new HBox(0);
+        utilityBar.setPadding(new Insets(0));
         utilityBar.setStyle(
-                "-fx-background-color: #2A2A2A; -fx-background-radius: 8 8 0 0; -fx-border-color: transparent transparent #404040 transparent; -fx-border-width: 0 0 1px 0;");
+                "-fx-background-color: " + Styles.BG_DARK + "; -fx-background-radius: 8 8 0 0; -fx-border-color: transparent transparent " + Styles.BORDER_MEDIUM + " transparent; -fx-border-width: 0 0 1px 0;");
+
+        HBox leftSection = new HBox(12);
+        leftSection.setPadding(new Insets(10, 16, 10, 16));
+        leftSection.setAlignment(Pos.CENTER_LEFT);
+        leftSection.setStyle("-fx-background-color: transparent;");
+        
+        try {
+            javafx.scene.image.ImageView logoView = new javafx.scene.image.ImageView(
+                    new Image(getClass().getResource("logo846.png").toExternalForm()));
+            logoView.setFitHeight(20);
+            logoView.setFitWidth(20);
+            logoView.setPreserveRatio(true);
+            logoView.setSmooth(true);
+            leftSection.getChildren().add(logoView);
+        } catch (Exception e) {
+        }
+        
+        Label appNameLabel = new Label("MonkeySee");
+        appNameLabel.setStyle(
+                "-fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-font-size: 14px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif; -fx-font-weight: 600;");
+        
+        Label versionLabel = new Label("v2.0.8");
+        versionLabel.setStyle(
+                "-fx-text-fill: " + Styles.TEXT_MUTED + "; -fx-font-size: 12px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif; -fx-font-weight: normal;");
+        
+        leftSection.getChildren().addAll(appNameLabel, versionLabel);
 
         Button closeButton = createWindowsButton("✕", true, () -> {
             if (dashboard != null) {
                 dashboard.shutdown();
             }
+            SidebarNetworkTablesChooser.shutdown();
             animateClose(primaryStage);
         });
         Button minimizeButton = createWindowsButton("—", false, () -> animateMinimize(primaryStage));
         Button maximizeButton = createMaximizeWindowsButton(primaryStage);
 
-        Label appNameLabel = new Label(APP_NAME);
-        appNameLabel.setStyle(
-                "-fx-text-fill: #E0E0E0; -fx-font-size: 15px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif; -fx-font-weight: bold;");
+        HBox rightSection = new HBox(0);
+        rightSection.setAlignment(Pos.CENTER_RIGHT);
+        rightSection.getChildren().addAll(minimizeButton, maximizeButton, closeButton);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        utilityBar.getChildren().addAll(appNameLabel, spacer, minimizeButton, maximizeButton, closeButton);
+        utilityBar.getChildren().addAll(leftSection, spacer, rightSection);
 
         enableDragging(primaryStage, utilityBar);
 
@@ -654,6 +704,32 @@ public class FunkyLogs extends Application {
             isDragging[0] = false;
         });
 
+        HBox leftSection = (HBox) utilityBar.getChildren().get(0);
+        leftSection.setOnMousePressed(event -> {
+            xOffset[0] = event.getSceneX();
+            yOffset[0] = event.getSceneY();
+            isDragging[0] = false;
+        });
+
+        leftSection.setOnMouseDragged(event -> {
+            if (!isDragging[0]) {
+                double deltaX = Math.abs(event.getSceneX() - xOffset[0]);
+                double deltaY = Math.abs(event.getSceneY() - yOffset[0]);
+                if (deltaX > 3 || deltaY > 3) {
+                    isDragging[0] = true;
+                }
+            }
+
+            if (isDragging[0]) {
+                stage.setX(event.getScreenX() - xOffset[0]);
+                stage.setY(event.getScreenY() - yOffset[0]);
+            }
+        });
+
+        leftSection.setOnMouseReleased(event -> {
+            isDragging[0] = false;
+        });
+
         Region spacer = (Region) utilityBar.getChildren().get(1);
         spacer.setOnMousePressed(event -> {
             xOffset[0] = event.getSceneX();
@@ -677,32 +753,6 @@ public class FunkyLogs extends Application {
         });
 
         spacer.setOnMouseReleased(event -> {
-            isDragging[0] = false;
-        });
-
-        Label appNameLabel = (Label) utilityBar.getChildren().get(0);
-        appNameLabel.setOnMousePressed(event -> {
-            xOffset[0] = event.getSceneX();
-            yOffset[0] = event.getSceneY();
-            isDragging[0] = false;
-        });
-
-        appNameLabel.setOnMouseDragged(event -> {
-            if (!isDragging[0]) {
-                double deltaX = Math.abs(event.getSceneX() - xOffset[0]);
-                double deltaY = Math.abs(event.getSceneY() - yOffset[0]);
-                if (deltaX > 3 || deltaY > 3) {
-                    isDragging[0] = true;
-                }
-            }
-
-            if (isDragging[0]) {
-                stage.setX(event.getScreenX() - xOffset[0]);
-                stage.setY(event.getScreenY() - yOffset[0]);
-            }
-        });
-
-        appNameLabel.setOnMouseReleased(event -> {
             isDragging[0] = false;
         });
     }
@@ -1004,6 +1054,7 @@ public class FunkyLogs extends Application {
             if (dashboard != null) {
                 dashboard.shutdown();
             }
+            SidebarNetworkTablesChooser.shutdown();
             System.exit(0);
         });
         closeAnim.play();

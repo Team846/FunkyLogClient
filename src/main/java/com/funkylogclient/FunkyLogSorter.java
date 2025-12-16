@@ -72,21 +72,24 @@ public class FunkyLogSorter {
     }
 
     public static void reFilter() {
-        synchronized (filtered) {
-            filtered.clear();
-            synchronized (messages) {
-                for (Message m : messages) {
-                    if (!checkMessageBySearch(m)) {
-                        continue;
-                    } else if (allowLogs && m.isLog()) {
-                        filtered.add(m);
-                    } else if (allowWarnings && m.isWarning()) {
-                        filtered.add(m);
-                    } else if (allowErrors && m.isError()) {
-                        filtered.add(m);
-                    }
+        List<Message> newFiltered = new ArrayList<>(messages.size() / 2);
+        synchronized (messages) {
+            for (Message m : messages) {
+                if (!checkMessageBySearch(m)) {
+                    continue;
+                }
+                if (allowLogs && m.isLog()) {
+                    newFiltered.add(m);
+                } else if (allowWarnings && m.isWarning()) {
+                    newFiltered.add(m);
+                } else if (allowErrors && m.isError()) {
+                    newFiltered.add(m);
                 }
             }
+        }
+        synchronized (filtered) {
+            filtered.clear();
+            filtered.addAll(newFiltered);
         }
         filterVersion.incrementAndGet();
     }
@@ -95,9 +98,17 @@ public class FunkyLogSorter {
         if (searchTerm.isEmpty())
             return true;
 
+        String sender = msg.getSender();
+        String content = msg.getContent();
         String lowerSearch = searchTerm.toLowerCase();
-        return msg.getSender().toLowerCase().contains(lowerSearch) 
-            || msg.getContent().toLowerCase().contains(lowerSearch);
+        
+        if (sender.length() < content.length()) {
+            return sender.toLowerCase().contains(lowerSearch) 
+                || content.toLowerCase().contains(lowerSearch);
+        } else {
+            return content.toLowerCase().contains(lowerSearch)
+                || sender.toLowerCase().contains(lowerSearch);
+        }
     }
 
     public static void addMessage(Message m) {
@@ -137,6 +148,9 @@ public class FunkyLogSorter {
 
     public static List<Message> getFilteredSnapshot() {
         synchronized (filtered) {
+            if (filtered.isEmpty()) {
+                return java.util.Collections.emptyList();
+            }
             return new ArrayList<>(filtered);
         }
     }
@@ -228,7 +242,7 @@ public class FunkyLogSorter {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Log File");
 
-        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("FunkyLogs File", ".log846");
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("MonkeySee File", ".log846");
         fileChooser.getExtensionFilters().add(extFilter);
 
         LocalDateTime dateTime = LocalDateTime.now();

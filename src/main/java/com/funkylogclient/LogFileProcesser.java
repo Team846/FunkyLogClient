@@ -1,22 +1,26 @@
 package com.funkylogclient;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.Scanner;
+import java.util.List;
 
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.stage.Stage;
 import javafx.stage.FileChooser;
 
 public class LogFileProcesser {
 
-	private static Scanner input;
 	private static File file;
 
 	public static void selectFile(Stage stage) {
 		try {
 			FileChooser fileChooser = new FileChooser();
-			FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("FunkyLogs File", "*.log846");
+			FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("MonkeySee File", "*.log846");
 			fileChooser.getExtensionFilters().add(extFilter);
 			fileChooser.setTitle("Open Log File");
 
@@ -41,20 +45,40 @@ public class LogFileProcesser {
 	}
 
 	public static void readFile(File file, Stage primaryStage) {
-		try {
-			input = new Scanner(file);
-		} catch (FileNotFoundException ex) {
-			System.out.println("File not found");
-			System.exit(1);
-		}
-		LinkedList<Message> messages = new LinkedList<Message>();
-		while (input.hasNextLine()) {
-			Message log = new Message(input.nextLine());
-			if (log.getValid()) {
-				messages.add(log);
+		Task<List<Message>> readTask = new Task<List<Message>>() {
+			@Override
+			protected List<Message> call() throws Exception {
+				List<Message> messages = new ArrayList<>();
+				try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+					String line;
+					while ((line = reader.readLine()) != null) {
+						Message log = new Message(line);
+						if (log.getValid()) {
+							messages.add(log);
+						}
+					}
+				} catch (IOException ex) {
+					System.err.println("Error reading file: " + ex.getMessage());
+				}
+				return messages;
 			}
-		}
-		SavedFunkyLogs.displaySavedLogs(messages, primaryStage, file.getName());
+		};
+		
+		readTask.setOnSucceeded(e -> {
+			List<Message> messages = readTask.getValue();
+			LinkedList<Message> messageList = new LinkedList<>(messages);
+			Platform.runLater(() -> {
+				SavedFunkyLogs.displaySavedLogs(messageList, primaryStage, file.getName());
+			});
+		});
+		
+		readTask.setOnFailed(e -> {
+			System.err.println("Failed to read file: " + readTask.getException().getMessage());
+		});
+		
+		Thread readThread = new Thread(readTask);
+		readThread.setDaemon(true);
+		readThread.start();
 	}
 
 }

@@ -9,6 +9,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Font;
@@ -59,28 +60,39 @@ public class GraphWidget extends DashboardWidget {
 
     private void createGraph() {
         contentBox.setStyle("-fx-background-color: transparent; -fx-background-radius: 0 0 8 8;");
-        contentBox.setPadding(new javafx.geometry.Insets(0));
+        contentBox.setPadding(new javafx.geometry.Insets(8));
 
         canvas = new Canvas();
-        canvas.setWidth(280);
-        canvas.setHeight(190);
         gc = canvas.getGraphicsContext2D();
+        gc.setImageSmoothing(true);
         data = new ArrayList<>(MAX_DATA_POINTS);
 
         chartPane = new StackPane();
-        chartPane.setMinHeight(190);
-        chartPane.setMinWidth(200);
+        chartPane.setMinSize(0, 0);
+        chartPane.setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+        chartPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         chartPane.getChildren().add(canvas);
-        canvas.widthProperty().bind(chartPane.widthProperty());
-        canvas.heightProperty().bind(chartPane.heightProperty());
-        canvas.widthProperty().addListener(e -> needsRedraw = true);
-        canvas.heightProperty().addListener(e -> needsRedraw = true);
+        
+        chartPane.widthProperty().addListener((obs, oldVal, newVal) -> {
+            double val = newVal.doubleValue();
+            if (val > 0 && Math.abs(val - canvas.getWidth()) > 0.5) {
+                canvas.setWidth(val);
+                needsRedraw = true;
+            }
+        });
+        chartPane.heightProperty().addListener((obs, oldVal, newVal) -> {
+            double val = newVal.doubleValue();
+            if (val > 0 && Math.abs(val - canvas.getHeight()) > 0.5) {
+                canvas.setHeight(val);
+                needsRedraw = true;
+            }
+        });
 
         contentBox.getChildren().add(chartPane);
         VBox.setVgrow(chartPane, javafx.scene.layout.Priority.ALWAYS);
 
-        timeline = new Timeline(new KeyFrame(Duration.millis(50), e -> {
-            if (needsRedraw) {
+        timeline = new Timeline(new KeyFrame(Duration.millis(16.67), e -> {
+            if (needsRedraw || data.size() > 0) {
                 redraw();
                 needsRedraw = false;
             }
@@ -100,6 +112,10 @@ public class GraphWidget extends DashboardWidget {
     private void redraw() {
         double width = canvas.getWidth();
         double height = canvas.getHeight();
+        
+        if (width <= 0 || height <= 0) {
+            return;
+        }
 
         gc.clearRect(0, 0, width, height);
         gc.setFill(Color.web(Styles.BG_DARK));
@@ -181,7 +197,9 @@ public class GraphWidget extends DashboardWidget {
 
         if (visibleCount > 0) {
             gc.setStroke(Color.web("#FF8C00"));
-            gc.setLineWidth(2);
+            gc.setLineWidth(2.0);
+            gc.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
+            gc.setLineJoin(javafx.scene.shape.StrokeLineJoin.ROUND);
             
             DataPoint prevPoint = null;
             for (int i = 0; i < data.size(); i++) {
@@ -192,7 +210,11 @@ public class GraphWidget extends DashboardWidget {
                         double y1 = topPadding + chartHeight - ((prevPoint.value - yMin) / (yMax - yMin)) * chartHeight;
                         double x2 = leftPadding + ((point.time - oldestTime) / timeFrame) * chartWidth;
                         double y2 = topPadding + chartHeight - ((point.value - yMin) / (yMax - yMin)) * chartHeight;
-                        gc.strokeLine(x1, y1, x2, y2);
+                        
+                        if (x1 >= leftPadding && x1 <= width - rightPadding && 
+                            x2 >= leftPadding && x2 <= width - rightPadding) {
+                            gc.strokeLine(x1, y1, x2, y2);
+                        }
                     }
                     prevPoint = point;
                 }

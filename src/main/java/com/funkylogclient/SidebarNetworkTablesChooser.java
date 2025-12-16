@@ -37,6 +37,8 @@ public class SidebarNetworkTablesChooser {
     private static Map<TreeItem<String>, String> itemToKeyMap = new HashMap<>();
     private static Set<String> sendableChooserPaths = new HashSet<>();
     private static Set<String> fieldPaths = new HashSet<>();
+    private static volatile boolean isDragging = false;
+    private static Thread updateThread = null;
 
     public static ArrayList<javafx.scene.Node> getNetworkTablesChooser() {
         ArrayList<javafx.scene.Node> chooserElements = new ArrayList<>();
@@ -291,10 +293,15 @@ public class SidebarNetworkTablesChooser {
     }
 
     private static void startNetworkTablesUpdate() {
-        Thread updateThread = new Thread(() -> {
+        updateThread = new Thread(() -> {
             while (true) {
                 try {
                     Thread.sleep(500);
+                    
+                    if (isDragging) {
+                        continue;
+                    }
+                    
                     if (NetworkTablesClient.isConnected()) {
                         NetworkTableInstance instance = NetworkTablesClient.getInstance();
                         if (instance != null) {
@@ -306,9 +313,19 @@ public class SidebarNetworkTablesChooser {
 
                                 Set<String> newChooserPaths = new HashSet<>();
                                 Set<String> newFieldPaths = new HashSet<>();
+                                
+                                boolean skipUpdate = false;
                                 synchronized (SidebarNetworkTablesChooser.class) {
-                                    sendableChooserPaths = newChooserPaths;
-                                    fieldPaths = newFieldPaths;
+                                    if (isDragging) {
+                                        skipUpdate = true;
+                                    } else {
+                                        sendableChooserPaths = newChooserPaths;
+                                        fieldPaths = newFieldPaths;
+                                    }
+                                }
+                                
+                                if (skipUpdate) {
+                                    continue;
                                 }
 
                                 for (String tableRoot : tableRoots) {
@@ -320,19 +337,35 @@ public class SidebarNetworkTablesChooser {
                                 e.printStackTrace();
                             }
 
+                            boolean skipUpdate = false;
                             synchronized (SidebarNetworkTablesChooser.class) {
-                                entries = newEntries;
+                                if (isDragging) {
+                                    skipUpdate = true;
+                                } else {
+                                    entries = newEntries;
+                                }
+                            }
+                            
+                            if (skipUpdate) {
+                                continue;
                             }
 
                             Platform.runLater(() -> {
+                                if (isDragging) {
+                                    return;
+                                }
+                                
                                 if (searchField.getText() == null || searchField.getText().trim().isEmpty()) {
                                     TreeItem<String> oldRoot = networkTablesTree.getRoot();
                                     Set<String> expandedPaths = saveExpandedState(oldRoot);
 
+                                    Map<TreeItem<String>, String> oldItemToKeyMap = new HashMap<>(itemToKeyMap);
                                     itemToKeyMap.clear();
                                     TreeItem<String> newRoot = createTreeRoot();
                                     populateTree(newRoot);
                                     restoreExpandedState(newRoot, expandedPaths);
+                                    
+                                    itemToKeyMap.putAll(oldItemToKeyMap);
 
                                     networkTablesTree.setRoot(newRoot);
                                 } else {
@@ -341,10 +374,14 @@ public class SidebarNetworkTablesChooser {
                             });
                         }
                     } else {
-                        Platform.runLater(() -> {
-                            networkTablesTree.setRoot(createTreeRoot());
-                            populateTree(networkTablesTree.getRoot());
-                        });
+                        if (!isDragging) {
+                            Platform.runLater(() -> {
+                                if (!isDragging) {
+                                    networkTablesTree.setRoot(createTreeRoot());
+                                    populateTree(networkTablesTree.getRoot());
+                                }
+                            });
+                        }
                     }
                 } catch (InterruptedException e) {
                     break;
@@ -354,6 +391,18 @@ public class SidebarNetworkTablesChooser {
         updateThread.setDaemon(true);
         updateThread.start();
     }
+    
+    public static void shutdown() {
+        synchronized (SidebarNetworkTablesChooser.class) {
+            if (updateThread != null && updateThread.isAlive()) {
+                updateThread.interrupt();
+            }
+            entries.clear();
+            itemToKeyMap.clear();
+            sendableChooserPaths.clear();
+            fieldPaths.clear();
+        }
+    }
 
     private static void setupDragAndDrop() {
         networkTablesTree.setOnDragDetected(event -> {
@@ -361,11 +410,31 @@ public class SidebarNetworkTablesChooser {
             if (selectedItem != null && !selectedItem.getValue().equals("NetworkTables")
                     && !selectedItem.getValue().equals("Not Connected")) {
 
-                String key = getFullKeyPath(selectedItem);
+                String key = null;
                 String displayValue = selectedItem.getValue();
 
                 synchronized (SidebarNetworkTablesChooser.class) {
+                    String storedKey = itemToKeyMap.get(selectedItem);
+                    if (storedKey != null) {
+                        key = storedKey;
+                    } else {
+                        key = getFullKeyPath(selectedItem);
+                    }
+                    
+                    boolean isValidKey = false;
                     if (key != null) {
+                        String fullPath = buildFullPath(selectedItem);
+                        isValidKey = entries.containsKey(key) || 
+                                    sendableChooserPaths.contains(key) || 
+                                    fieldPaths.contains(key) ||
+                                    sendableChooserPaths.contains(fullPath) ||
+                                    fieldPaths.contains(fullPath) ||
+                                    (key.endsWith("/active") && sendableChooserPaths.contains(key.substring(0, key.length() - 7)));
+                    }
+                    
+                    if (isValidKey) {
+                        isDragging = true;
+                        
                         Dragboard dragboard = networkTablesTree.startDragAndDrop(TransferMode.COPY);
                         ClipboardContent content = new ClipboardContent();
                         content.putString(key);
@@ -389,9 +458,15 @@ public class SidebarNetworkTablesChooser {
                         System.out.println("Dragging key: " + key);
                         event.consume();
                     } else {
-                        System.out.println("Cannot drag - key: " + key);
+                        System.out.println("Cannot drag - key not found: " + key);
                     }
                 }
+            }
+        });
+        
+        networkTablesTree.setOnDragDone(event -> {
+            synchronized (SidebarNetworkTablesChooser.class) {
+                isDragging = false;
             }
         });
     }

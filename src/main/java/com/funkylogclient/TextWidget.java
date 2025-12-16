@@ -2,9 +2,11 @@ package com.funkylogclient;
 
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Priority;
 import javafx.geometry.Pos;
 import javafx.application.Platform;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -13,9 +15,11 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 
 public class TextWidget extends DashboardWidget {
     private TextField valueField;
+    private Label valueLabel;
     private Button confirmButton;
     private boolean isEditable;
     private boolean isUpdating = false;
+    private String currentNTValue = null;
 
     public TextWidget(String title, String key) {
         super(title, key);
@@ -24,53 +28,90 @@ public class TextWidget extends DashboardWidget {
     }
 
     private void createTextDisplay() {
-        valueField = new TextField("--");
-        valueField.setStyle(
-                "-fx-font-size: 20px; -fx-font-weight: bold; -fx-font-family: " + Styles.FONT_FAMILY + "; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-background-color: transparent; -fx-border-width: 0 0 2 0; -fx-border-color: " + Styles.BORDER_DARK + "; -fx-padding: 8px 8px 6px 8px; -fx-alignment: center;");
-
-        valueField.setEditable(isEditable);
-        valueField.setDisable(!isEditable);
-
         if (isEditable) {
+            valueField = new TextField("--");
             valueField.setStyle(
-                    "-fx-font-size: 20px; -fx-font-weight: bold; -fx-font-family: " + Styles.FONT_FAMILY + "; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-background-color: " + Styles.BG_MEDIUM + "; -fx-border-width: 0 0 2 0; -fx-border-color: " + Styles.ACCENT_PRIMARY + "; -fx-padding: 8px 8px 6px 8px; -fx-alignment: center; -fx-background-radius: 6px;");
-        }
-
-        confirmButton = new Button("✓");
-        confirmButton.setStyle(Styles.CONFIRM_BUTTON_STYLE);
-        confirmButton.setVisible(false);
-        confirmButton.setOnAction(e -> writeValueBack());
-
-        confirmButton.setOnMouseEntered(e -> confirmButton.setStyle(Styles.CONFIRM_BUTTON_HOVER_STYLE));
-        confirmButton.setOnMouseExited(e -> confirmButton.setStyle(Styles.CONFIRM_BUTTON_STYLE));
-
-        if (isEditable) {
-            valueField.setOnAction(e -> {
-                writeValueBack();
-                Platform.runLater(() -> valueField.getParent().requestFocus());
+                    "-fx-font-size: 24px; -fx-font-weight: bold; -fx-font-family: " + Styles.FONT_FAMILY + "; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0; -fx-alignment: center;");
+            valueField.setEditable(true);
+            
+            confirmButton = new Button("OK");
+            confirmButton.setText("OK");
+            confirmButton.setStyle(
+                    "-fx-font-size: 12px; -fx-background-color: #CC7000; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-padding: 6px 12px; -fx-background-radius: 4px; -fx-cursor: default; -fx-min-width: 50px; -fx-pref-width: 50px; -fx-max-width: 50px; -fx-min-height: 30px; -fx-pref-height: 30px; -fx-max-height: 30px; -fx-opacity: 0.6; -fx-text-overrun: clip;");
+            confirmButton.setVisible(true);
+            confirmButton.setDisable(true);
+            confirmButton.setOnAction(e -> writeValueBack());
+            confirmButton.setOnMouseEntered(e -> {
+                if (!confirmButton.isDisabled()) {
+                    confirmButton.setStyle(
+                            "-fx-font-size: 12px; -fx-background-color: " + Styles.ACCENT_HOVER + "; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-padding: 6px 12px; -fx-background-radius: 4px; -fx-cursor: hand; -fx-min-width: 50px; -fx-pref-width: 50px; -fx-max-width: 50px; -fx-min-height: 30px; -fx-pref-height: 30px; -fx-max-height: 30px;");
+                }
             });
-
-            valueField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-                confirmButton.setVisible(isNowFocused);
-                if (wasFocused && !isNowFocused) {
+            confirmButton.setOnMouseExited(e -> updateButtonState());
+            
+            valueField.textProperty().addListener((obs, oldVal, newVal) -> {
+                if (!isUpdating) {
+                    updateButtonState();
+                }
+            });
+            
+            valueField.setOnAction(e -> {
+                if (!confirmButton.isDisabled()) {
                     writeValueBack();
                 }
             });
+            
+            HBox inputContainer = new HBox(12);
+            inputContainer.setAlignment(Pos.CENTER);
+            inputContainer.getChildren().addAll(valueField, confirmButton);
+            
+            VBox textContainer = new VBox(0);
+            textContainer.setAlignment(Pos.CENTER);
+            textContainer.getChildren().add(inputContainer);
+            VBox.setVgrow(textContainer, Priority.ALWAYS);
+            
+            contentBox.getChildren().add(textContainer);
+        } else {
+            valueLabel = new Label("--");
+            valueLabel.setStyle(
+                    "-fx-font-size: 36px; -fx-font-weight: normal; -fx-font-family: " + Styles.FONT_FAMILY + "; -fx-text-fill: " + Styles.TEXT_SECONDARY + "; -fx-background-color: transparent; -fx-padding: 0; -fx-alignment: center;");
+            valueLabel.setAlignment(Pos.CENTER);
+            valueLabel.setMaxWidth(Double.MAX_VALUE);
+            HBox.setHgrow(valueLabel, Priority.ALWAYS);
+            
+            VBox textContainer = new VBox(0);
+            textContainer.setAlignment(Pos.TOP_CENTER);
+            textContainer.setPadding(new javafx.geometry.Insets(-8, 0, 0, 0));
+            textContainer.getChildren().add(valueLabel);
+            VBox.setVgrow(textContainer, Priority.ALWAYS);
+            
+            contentBox.getChildren().add(textContainer);
         }
-
-        HBox inputContainer = new HBox(6);
-        inputContainer.setAlignment(Pos.CENTER);
-        inputContainer.getChildren().addAll(valueField, confirmButton);
-
-        VBox textContainer = new VBox(8);
-        textContainer.setAlignment(Pos.CENTER);
-        textContainer.getChildren().add(inputContainer);
-
-        contentBox.getChildren().add(textContainer);
     }
 
+    private void updateButtonState() {
+        if (!isEditable || valueField == null || confirmButton == null) {
+            return;
+        }
+        
+        String fieldValue = valueField.getText();
+        boolean hasChange = currentNTValue != null && !fieldValue.equals(currentNTValue);
+        
+        Platform.runLater(() -> {
+            confirmButton.setDisable(!hasChange);
+            confirmButton.setText("OK");
+            if (hasChange) {
+                confirmButton.setStyle(
+                        "-fx-font-size: 12px; -fx-background-color: " + Styles.ACCENT_PRIMARY + "; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-padding: 6px 12px; -fx-background-radius: 4px; -fx-cursor: hand; -fx-min-width: 50px; -fx-pref-width: 50px; -fx-max-width: 50px; -fx-min-height: 30px; -fx-pref-height: 30px; -fx-max-height: 30px; -fx-opacity: 1.0; -fx-text-overrun: clip;");
+            } else {
+                confirmButton.setStyle(
+                        "-fx-font-size: 12px; -fx-background-color: #CC7000; -fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-padding: 6px 12px; -fx-background-radius: 4px; -fx-cursor: default; -fx-min-width: 50px; -fx-pref-width: 50px; -fx-max-width: 50px; -fx-min-height: 30px; -fx-pref-height: 30px; -fx-max-height: 30px; -fx-opacity: 0.6; -fx-text-overrun: clip;");
+            }
+        });
+    }
+    
     private void writeValueBack() {
-        if (!isEditable || isUpdating) {
+        if (!isEditable || isUpdating || confirmButton.isDisabled()) {
             return;
         }
 
@@ -86,12 +127,13 @@ public class TextWidget extends DashboardWidget {
                     NetworkTableEntry entry = table.getEntry(secondPartKey);
                     entry.setString(textValue);
                     System.out.println("Wrote value " + textValue + " back to " + key);
+                    currentNTValue = textValue;
                 }
             } finally {
                 isUpdating = false;
             }
 
-            Platform.runLater(() -> confirmButton.setVisible(false));
+            Platform.runLater(() -> updateButtonState());
         } catch (Exception e) {
             System.err.println("Error writing value back: " + e.getMessage());
         }
@@ -99,23 +141,50 @@ public class TextWidget extends DashboardWidget {
 
     @Override
     public void updateValue(Object value) {
-        if (isUpdating || valueField.isFocused()) {
-            return;
-        }
-
-        isUpdating = true;
-        try {
-            if (value != null) {
-                if (value instanceof String) {
-                    valueField.setText((String) value);
-                } else {
-                    valueField.setText(value.toString());
-                }
-            } else {
-                valueField.setText("--");
+        if (isEditable) {
+            if (isUpdating || valueField.isFocused()) {
+                return;
             }
-        } finally {
-            isUpdating = false;
+            
+            isUpdating = true;
+            try {
+                String newValue = null;
+                if (value != null) {
+                    if (value instanceof String) {
+                        newValue = (String) value;
+                    } else {
+                        newValue = value.toString();
+                    }
+                } else {
+                    newValue = "--";
+                }
+                
+                valueField.setText(newValue);
+                currentNTValue = newValue;
+            } finally {
+                isUpdating = false;
+            }
+            
+            Platform.runLater(() -> updateButtonState());
+        } else {
+            if (isUpdating) {
+                return;
+            }
+            
+            isUpdating = true;
+            try {
+                if (value != null) {
+                    if (value instanceof String) {
+                        valueLabel.setText((String) value);
+                    } else {
+                        valueLabel.setText(value.toString());
+                    }
+                } else {
+                    valueLabel.setText("--");
+                }
+            } finally {
+                isUpdating = false;
+            }
         }
     }
 

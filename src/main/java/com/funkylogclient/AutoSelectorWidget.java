@@ -4,8 +4,10 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
 import javafx.geometry.Pos;
 import javafx.application.Platform;
+import javafx.scene.paint.Color;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
@@ -17,15 +19,15 @@ import java.util.concurrent.TimeUnit;
 
 public class AutoSelectorWidget extends DashboardWidget {
     private ComboBox<String> modeComboBox;
-    private Button refreshButton;
+    private Circle statusIndicator;
     private List<String> autoModes;
     private boolean isUpdating = false;
     private Runnable removeCallback;
     private String lastUserSelection = null;
+    private String currentNetworkValue = null;
     private long lastWriteTime = 0;
     private static final long WRITE_COOLDOWN_MS = 2000;
     private ScheduledExecutorService writeExecutor;
-    private NetworkTableEntry activeEntry;
 
     public AutoSelectorWidget(String title, String key) {
         super(title, key);
@@ -127,42 +129,17 @@ public class AutoSelectorWidget extends DashboardWidget {
         modeComboBox.setOnAction(e -> {
             if (!isUpdating) {
                 writeSelectedMode();
+                updateStatusIndicator();
             }
         });
 
-        refreshButton = new Button("↻");
-        refreshButton.setStyle(
-                "-fx-font-size: 16px; " +
-                        "-fx-background-color: #FF8C00; " +
-                        "-fx-text-fill: white; " +
-                        "-fx-padding: 8px 12px; " +
-                        "-fx-background-radius: 6px; " +
-                        "-fx-cursor: hand;");
-        refreshButton.setOnAction(e -> refreshAutoModes());
-
-        refreshButton.setOnMouseEntered(e -> {
-            refreshButton.setStyle(
-                    "-fx-font-size: 16px; " +
-                            "-fx-background-color: #FFA333; " +
-                            "-fx-text-fill: white; " +
-                            "-fx-padding: 8px 12px; " +
-                            "-fx-background-radius: 6px; " +
-                            "-fx-cursor: hand;");
-        });
-
-        refreshButton.setOnMouseExited(e -> {
-            refreshButton.setStyle(
-                    "-fx-font-size: 16px; " +
-                            "-fx-background-color: #FF8C00; " +
-                            "-fx-text-fill: white; " +
-                            "-fx-padding: 8px 12px; " +
-                            "-fx-background-radius: 6px; " +
-                            "-fx-cursor: hand;");
-        });
+        statusIndicator = new Circle(6);
+        statusIndicator.setFill(Color.web("#F85149"));
+        statusIndicator.setStroke(Color.TRANSPARENT);
 
         HBox selectorContainer = new HBox(10);
         selectorContainer.setAlignment(Pos.CENTER);
-        selectorContainer.getChildren().addAll(modeComboBox, refreshButton);
+        selectorContainer.getChildren().addAll(modeComboBox, statusIndicator);
 
         VBox autoContainer = new VBox(8);
         autoContainer.setAlignment(Pos.CENTER);
@@ -264,7 +241,6 @@ public class AutoSelectorWidget extends DashboardWidget {
             NetworkTableEntry selectedEntry = chooserTable.getEntry("selected");
             if (selectedEntry != null) {
                 selectedEntry.setString(selected);
-                activeEntry = chooserTable.getEntry("active");
 
                 NetworkTableInstance ntInstance = NetworkTableInstance.getDefault();
                 if (ntInstance != null) {
@@ -287,10 +263,6 @@ public class AutoSelectorWidget extends DashboardWidget {
         writeExecutor = Executors.newSingleThreadScheduledExecutor();
         writeExecutor.scheduleAtFixedRate(() -> {
             try {
-                if (lastUserSelection == null) {
-                    return;
-                }
-
                 NetworkTableInstance instance = NetworkTableInstance.getDefault();
                 if (instance == null) {
                     return;
@@ -313,22 +285,50 @@ public class AutoSelectorWidget extends DashboardWidget {
                     return;
                 }
 
-                NetworkTableEntry selectedEntry = chooserTable.getEntry("selected");
-                if (selectedEntry != null && selectedEntry.exists()) {
-                    String currentNetworkValue = selectedEntry.getString("");
+                NetworkTableEntry activeEntry = chooserTable.getEntry("active");
+                if (activeEntry != null && activeEntry.exists()) {
+                    String newNetworkValue = activeEntry.getString("");
+                    if (newNetworkValue != null && !newNetworkValue.equals(currentNetworkValue)) {
+                        currentNetworkValue = newNetworkValue;
+                        updateStatusIndicator();
+                    }
+                }
 
-                    if (!lastUserSelection.equals(currentNetworkValue)) {
-                        selectedEntry.setString(lastUserSelection);
+                if (lastUserSelection != null) {
+                    NetworkTableEntry selectedEntry = chooserTable.getEntry("selected");
+                    if (selectedEntry != null && selectedEntry.exists()) {
+                        String selectedValue = selectedEntry.getString("");
 
-                        NetworkTableInstance ntInstance = NetworkTableInstance.getDefault();
-                        if (ntInstance != null) {
-                            ntInstance.flush();
+                        if (!lastUserSelection.equals(selectedValue)) {
+                            selectedEntry.setString(lastUserSelection);
+
+                            NetworkTableInstance ntInstance = NetworkTableInstance.getDefault();
+                            if (ntInstance != null) {
+                                ntInstance.flush();
+                            }
                         }
                     }
                 }
             } catch (Exception e) {
             }
         }, 0, 200, TimeUnit.MILLISECONDS);
+    }
+    
+    private void updateStatusIndicator() {
+        Platform.runLater(() -> {
+            if (statusIndicator == null) {
+                return;
+            }
+            
+            String comboValue = modeComboBox.getValue();
+            boolean matches = comboValue != null && comboValue.equals(currentNetworkValue);
+            
+            if (matches) {
+                statusIndicator.setFill(Color.web("#4CAF50"));
+            } else {
+                statusIndicator.setFill(Color.web("#F85149"));
+            }
+        });
     }
 
     public void shutdown() {
@@ -402,12 +402,14 @@ public class AutoSelectorWidget extends DashboardWidget {
             return;
         }
 
+        currentNetworkValue = strValue;
         isUpdating = true;
         Platform.runLater(() -> {
             if (!modeComboBox.getItems().contains(strValue)) {
                 modeComboBox.getItems().add(strValue);
             }
             modeComboBox.setValue(strValue);
+            updateStatusIndicator();
             isUpdating = false;
         });
     }
