@@ -20,7 +20,7 @@ public class LogFileProcesser {
 	public static void selectFile(Stage stage) {
 		try {
 			FileChooser fileChooser = new FileChooser();
-			FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("MonkeySee File", "*.log846");
+			FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("ChimpCheck File", "*.log846");
 			fileChooser.getExtensionFilters().add(extFilter);
 			fileChooser.setTitle("Open Log File");
 

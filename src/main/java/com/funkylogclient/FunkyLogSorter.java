@@ -242,7 +242,7 @@ public class FunkyLogSorter {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Log File");
 
-        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("MonkeySee File", ".log846");
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("ChimpCheck File", ".log846");
         fileChooser.getExtensionFilters().add(extFilter);
 
         LocalDateTime dateTime = LocalDateTime.now();

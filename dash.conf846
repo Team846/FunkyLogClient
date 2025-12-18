@@ -1,40 +1,34 @@
 {
   "widgets" : [ {
-    "key" : "SmartDashboard/Intake/Speed",
+    "key" : "SmartDashboard/Shooter/Ready",
+    "type" : "boolean",
+    "title" : "Ready",
+    "col" : 3,
+    "row" : 4
+  }, {
+    "key" : "Preferences/ictest/friction_newtons",
     "type" : "number",
-    "title" : "Speed",
+    "title" : "friction_newtons",
+    "col" : 2,
+    "row" : 0
+  }, {
+    "key" : "Preferences/ictest/ipg",
+    "type" : "number",
+    "title" : "ipg",
     "col" : 1,
     "row" : 0
   }, {
-    "key" : "Preferences/ElevatorPreset",
+    "key" : "Preferences/ictest/end_mass_lbs",
     "type" : "number",
-    "title" : "ElevatorPreset",
-    "col" : 3,
-    "row" : 4
-  }, {
-    "key" : "Preferences/MaxSpeed",
-    "type" : "number",
-    "title" : "MaxSpeed",
-    "col" : 2,
-    "row" : 5
-  }, {
-    "key" : "SmartDashboard/Motors/Temperature",
-    "type" : "number",
-    "title" : "Temperature",
+    "title" : "end_mass_lbs",
     "col" : 4,
-    "row" : 4
-  }, {
-    "key" : "SmartDashboard/Arm/Angle",
-    "type" : "number",
-    "title" : "Angle",
-    "col" : 1,
-    "row" : 3
-  }, {
-    "key" : "SmartDashboard/Robot/BatteryVoltage",
-    "type" : "number",
-    "title" : "BatteryVoltage",
-    "col" : 3,
     "row" : 2
+  }, {
+    "key" : "SmartDashboard/Intake/HasPiece",
+    "type" : "boolean",
+    "title" : "HasPiece",
+    "col" : 4,
+    "row" : 1
   }, {
     "key" : "SmartDashboard/Auto",
     "type" : "autoselector",
@@ -42,22 +36,10 @@
     "col" : 3,
     "row" : 0
   }, {
-    "key" : "Preferences/ShooterRPM",
-    "type" : "number",
-    "title" : "ShooterRPM",
-    "col" : 0,
-    "row" : 4
-  }, {
-    "key" : "SmartDashboard/Shooter/Ready",
-    "type" : "boolean",
-    "title" : "Ready",
-    "col" : 0,
-    "row" : 2
-  }, {
-    "key" : "SmartDashboard/Intake/HasPiece",
-    "type" : "boolean",
-    "title" : "HasPiece",
-    "col" : 4,
+    "key" : "SmartDashboard/ictest/position (in)",
+    "type" : "graph",
+    "title" : "position (in)",
+    "col" : 2,
     "row" : 1
   }, {
     "key" : "Preferences/AutoAim",
@@ -71,11 +53,5 @@
     "title" : "MatchType",
     "col" : 2,
     "row" : 3
-  }, {
-    "key" : "SmartDashboard/Motors/Current",
-    "type" : "number",
-    "title" : "Current",
-    "col" : 4,
-    "row" : 5
   } ]
 }

@@ -31,7 +31,7 @@ import javafx.util.Duration;
 
 public class FunkyLogs extends Application {
 
-    public static final String APP_NAME = "MonkeySee v2.0.8";
+    public static final String APP_NAME = "ChimpCheck v2.0.8";
 
     private StackPane rootStack;
     private BorderPane root;
@@ -640,7 +640,7 @@ public class FunkyLogs extends Application {
         } catch (Exception e) {
         }
         
-        Label appNameLabel = new Label("MonkeySee");
+        Label appNameLabel = new Label("ChimpCheck");
         appNameLabel.setStyle(
                 "-fx-text-fill: " + Styles.TEXT_WHITE + "; -fx-font-size: 14px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif; -fx-font-weight: 600;");
         
