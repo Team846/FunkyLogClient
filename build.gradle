@@ -93,7 +93,6 @@ tasks.named('distTar').configure {
 }
 
 run.dependsOn unpackNativeLibs
-build.dependsOn unpackNativeLibs
 
 jar {
     from {
@@ -108,4 +107,61 @@ jar {
 clean {
     delete 'build', 'target'
 }
+
+build.dependsOn unpackNativeLibs
+
+task prepareJpackageInput(type: Copy) {
+    dependsOn jar, unpackNativeLibs
+    
+    from jar.archiveFile
+    into 'build/jpackage-input'
+    
+    from('build/libs/windows') {
+        into 'windows'
+    }
+}
+
+task jpackageExe(type: Exec) {
+    dependsOn prepareJpackageInput
+    
+    description = 'Create Windows EXE bundle with bundled JRE'
+    group = 'build'
+    
+    def javaHome = System.getProperty('java.home')
+    def jpackageExePath = new File(javaHome, 'bin/jpackage.exe')
+    
+    def jpackageCmd = []
+    
+    doFirst {
+        if (!jpackageExePath.exists()) {
+            throw new GradleException("jpackage not found at ${jpackageExePath}. Please use JDK 17 or later (not JRE).")
+        }
+        
+        println "Building Windows EXE bundle with jpackage..."
+        
+        jpackageCmd = [
+            jpackageExePath.absolutePath,
+            '--type', 'app-image',
+            '--name', 'chimpcheck',
+            '--app-version', version,
+            '--input', 'build/jpackage-input',
+            '--main-jar', "funkylogclient-${version}.jar",
+            '--main-class', 'com.funkylogclient.Main',
+            '--dest', 'build/dist',
+            '--java-options', '-Djava.library.path=$APPDIR\\windows\\x86-64',
+            '--java-options', '-Dwpiutil.nativelibdir=$APPDIR\\windows'
+        ]
+        
+        commandLine jpackageCmd
+    }
+    
+    doLast {
+        println ""
+        println "=========================================="
+        println "Build complete: build/dist/chimpcheck/chimpcheck.exe"
+        println "=========================================="
+    }
+}
+
+build.finalizedBy jpackageExe
 

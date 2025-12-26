@@ -18,11 +18,29 @@
     "col" : 1,
     "row" : 0
   }, {
+    "key" : "SmartDashboard/GPDField",
+    "type" : "fieldview",
+    "title" : "GPDField",
+    "col" : 0,
+    "row" : 0
+  }, {
     "key" : "Preferences/ictest/end_mass_lbs",
     "type" : "number",
     "title" : "end_mass_lbs",
     "col" : 4,
     "row" : 2
+  }, {
+    "key" : "Preferences/ictest/smart_current_limit (A)",
+    "type" : "number",
+    "title" : "smart_current_limit (A)",
+    "col" : 0,
+    "row" : 4
+  }, {
+    "key" : "Preferences/ictest/motor_current_limit (A)",
+    "type" : "number",
+    "title" : "motor_current_limit (A)",
+    "col" : 1,
+    "row" : 4
   }, {
     "key" : "SmartDashboard/Intake/HasPiece",
     "type" : "boolean",
@@ -35,12 +53,6 @@
     "title" : "Auto",
     "col" : 3,
     "row" : 0
-  }, {
-    "key" : "SmartDashboard/ictest/position (in)",
-    "type" : "graph",
-    "title" : "position (in)",
-    "col" : 2,
-    "row" : 1
   }, {
     "key" : "Preferences/AutoAim",
     "type" : "boolean",
