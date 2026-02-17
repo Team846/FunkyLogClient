@@ -1,68 +1,116 @@
 {
   "widgets" : [ {
-    "key" : "SmartDashboard/Shooter/Ready",
-    "type" : "boolean",
-    "title" : "Ready",
-    "col" : 3,
-    "row" : 4
-  }, {
-    "key" : "Preferences/ictest/friction_newtons",
+    "key" : "SmartDashboard/SwerveDrivetrain/BR/target/steer_dir (deg)",
     "type" : "number",
-    "title" : "friction_newtons",
-    "col" : 2,
-    "row" : 0
-  }, {
-    "key" : "Preferences/ictest/ipg",
-    "type" : "number",
-    "title" : "ipg",
-    "col" : 1,
-    "row" : 0
-  }, {
-    "key" : "SmartDashboard/GPDField",
-    "type" : "fieldview",
-    "title" : "GPDField",
-    "col" : 0,
-    "row" : 0
-  }, {
-    "key" : "Preferences/ictest/end_mass_lbs",
-    "type" : "number",
-    "title" : "end_mass_lbs",
+    "title" : "steer_dir (deg)",
     "col" : 4,
-    "row" : 2
+    "row" : 3
   }, {
-    "key" : "Preferences/ictest/smart_current_limit (A)",
+    "key" : "Preferences/scorer_ss/passing/left_x (in)",
     "type" : "number",
-    "title" : "smart_current_limit (A)",
+    "title" : "left_x (in)",
     "col" : 0,
-    "row" : 4
-  }, {
-    "key" : "Preferences/ictest/motor_current_limit (A)",
-    "type" : "number",
-    "title" : "motor_current_limit (A)",
-    "col" : 1,
-    "row" : 4
-  }, {
-    "key" : "SmartDashboard/Intake/HasPiece",
-    "type" : "boolean",
-    "title" : "HasPiece",
-    "col" : 4,
     "row" : 1
   }, {
-    "key" : "SmartDashboard/Auto",
-    "type" : "autoselector",
-    "title" : "Auto",
+    "key" : "SmartDashboard/drive_command/target_angular_velocity (s^-1 deg)",
+    "type" : "number",
+    "title" : "target_angular_velocity (s^-1 deg)",
     "col" : 3,
-    "row" : 0
+    "row" : 3
   }, {
-    "key" : "Preferences/AutoAim",
-    "type" : "boolean",
-    "title" : "AutoAim",
+    "key" : "SmartDashboard/turret/error (deg)",
+    "type" : "number",
+    "title" : "error (deg)",
     "col" : 2,
     "row" : 4
   }, {
-    "key" : "Preferences/MatchType",
+    "key" : "SmartDashboard/turret/target/pos (deg)",
+    "type" : "number",
+    "title" : "pos (deg)",
+    "col" : 3,
+    "row" : 5
+  }, {
+    "key" : "Preferences/shooter/genome/gains/kF",
+    "type" : "number",
+    "title" : "kF",
+    "col" : 1,
+    "row" : 2
+  }, {
+    "key" : "Preferences/scorer_ss/passing/right_x (in)",
+    "type" : "number",
+    "title" : "right_x (in)",
+    "col" : 1,
+    "row" : 3
+  }, {
+    "key" : "SmartDashboard/SendableChooser[0]",
+    "type" : "autoselector",
+    "title" : "SendableChooser[0]",
+    "col" : 1,
+    "row" : 5
+  }, {
+    "key" : "SmartDashboard/shooter/is_spun_up",
     "type" : "boolean",
-    "title" : "MatchType",
+    "title" : "is_spun_up",
+    "col" : 4,
+    "row" : 5
+  }, {
+    "key" : "SmartDashboard/shooter/velocity_error (ft s^-1)",
+    "type" : "number",
+    "title" : "velocity_error (ft s^-1)",
+    "col" : 0,
+    "row" : 4
+  }, {
+    "key" : "Preferences/shooter/genome/gains/kP",
+    "type" : "number",
+    "title" : "kP",
+    "col" : 0,
+    "row" : 3
+  }, {
+    "key" : "SmartDashboard/SwerveDrivetrain/estimated_pose/position_x (in)",
+    "type" : "number",
+    "title" : "position_x (in)",
+    "col" : 3,
+    "row" : 4
+  }, {
+    "key" : "Preferences/scorer_ss/passing/right_y (in)",
+    "type" : "number",
+    "title" : "right_y (in)",
+    "col" : 1,
+    "row" : 4
+  }, {
+    "key" : "SmartDashboard/MainField",
+    "type" : "fieldview",
+    "title" : "MainField",
+    "col" : 2,
+    "row" : 0
+  }, {
+    "key" : "SmartDashboard/SwerveDrivetrain/estimated_pose/position_y (in)",
+    "type" : "number",
+    "title" : "position_y (in)",
+    "col" : 4,
+    "row" : 4
+  }, {
+    "key" : "SmartDashboard/ShootingCalculator/distance_vel (ft)",
+    "type" : "number",
+    "title" : "distance_vel (ft)",
+    "col" : 1,
+    "row" : 0
+  }, {
+    "key" : "Preferences/scorer_ss/passing/left_y (in)",
+    "type" : "number",
+    "title" : "left_y (in)",
+    "col" : 0,
+    "row" : 2
+  }, {
+    "key" : "Preferences/ShootingCalculator/swim/projectGain",
+    "type" : "number",
+    "title" : "projectGain",
+    "col" : 1,
+    "row" : 1
+  }, {
+    "key" : "Preferences/turret/wrap/positive (deg)",
+    "type" : "number",
+    "title" : "positive (deg)",
     "col" : 2,
     "row" : 3
   } ]

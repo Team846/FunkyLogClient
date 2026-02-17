@@ -47,6 +47,11 @@ public class RightSidebar {
 
                         sidebarContent.getChildren().addAll(SidebarNetworkTablesChooser.getNetworkTablesChooser());
 
+                        Region joystickSpacer = new Region();
+                        joystickSpacer.setMinHeight(12);
+                        sidebarContent.getChildren().add(joystickSpacer);
+                        sidebarContent.getChildren().add(SidebarJoystickInput.getJoystickInputSection());
+
                         NetworkTablesClient.connectedProperty().addListener((observable, oldValue, newValue) -> {
                                 Platform.runLater(() -> {
                                         SidebarNetworkTablesSettings.updateStatus(

@@ -91,7 +91,7 @@ public class GraphWidget extends DashboardWidget {
         contentBox.getChildren().add(chartPane);
         VBox.setVgrow(chartPane, javafx.scene.layout.Priority.ALWAYS);
 
-        timeline = new Timeline(new KeyFrame(Duration.millis(16.67), e -> {
+        timeline = new Timeline(new KeyFrame(Duration.millis(33), e -> {
             if (needsRedraw || data.size() > 0) {
                 redraw();
                 needsRedraw = false;

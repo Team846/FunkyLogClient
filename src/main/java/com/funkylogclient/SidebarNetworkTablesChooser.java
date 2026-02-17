@@ -3,7 +3,6 @@ package com.funkylogclient;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.NetworkTableValue;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -39,6 +38,9 @@ public class SidebarNetworkTablesChooser {
     private static Set<String> fieldPaths = new HashSet<>();
     private static volatile boolean isDragging = false;
     private static Thread updateThread = null;
+    private static final long TREE_REFRESH_INTERVAL_MS = 3000;
+    private static volatile long lastTreeUIRefreshTime = 0;
+    private static int lastEntriesSignature = 0;
 
     public static ArrayList<javafx.scene.Node> getNetworkTablesChooser() {
         ArrayList<javafx.scene.Node> chooserElements = new ArrayList<>();
@@ -105,18 +107,15 @@ public class SidebarNetworkTablesChooser {
                 } else {
                     setText(item);
 
-                    boolean isEntry = item != null && item.contains(" = ") &&
-                            !item.equals("NetworkTables") && !item.equals("Not Connected");
+                    TreeItem<String> treeItem = getTreeItem();
+                    boolean isEntry = treeItem != null && itemToKeyMap.containsKey(treeItem);
 
                     boolean isChooser = false;
                     boolean isField = false;
-                    if (!isEntry) {
-                        TreeItem<String> treeItem = getTreeItem();
-                        if (treeItem != null) {
-                            String fullPath = buildFullPath(treeItem);
-                            isChooser = sendableChooserPaths.contains(fullPath);
-                            isField = fieldPaths.contains(fullPath);
-                        }
+                    if (treeItem != null && !isEntry) {
+                        String fullPath = buildFullPath(treeItem);
+                        isChooser = sendableChooserPaths.contains(fullPath);
+                        isField = fieldPaths.contains(fullPath);
                     }
 
                     if (isEntry) {
@@ -151,6 +150,7 @@ public class SidebarNetworkTablesChooser {
     }
 
     private static void filterTree(String searchText) {
+        lastTreeUIRefreshTime = System.currentTimeMillis();
         if (searchText == null || searchText.trim().isEmpty()) {
             TreeItem<String> oldRoot = networkTablesTree.getRoot();
             Set<String> expandedPaths = saveExpandedState(oldRoot);
@@ -204,12 +204,7 @@ public class SidebarNetworkTablesChooser {
             }
 
             boolean childHasMatch = child.getChildren().stream()
-                    .anyMatch(c -> {
-                        String childValue = c.getValue();
-                        boolean isEntry = childValue.contains(" = ");
-                        String nodeName = isEntry ? childValue.substring(0, childValue.indexOf(" = ")) : childValue;
-                        return nodeName.toLowerCase().contains(searchText);
-                    });
+                    .anyMatch(c -> c.getValue().toLowerCase().contains(searchText));
 
             if (childHasMatch) {
                 hasMatchingDescendant = true;
@@ -233,31 +228,9 @@ public class SidebarNetworkTablesChooser {
             boolean isLastPart = (i == parts.length - 1);
 
             if (isLastPart && entry.exists()) {
-                try {
-                    NetworkTableValue ntValue = entry.getValue();
-                    if (ntValue != null) {
-                        Object valueObj = ntValue.getValue();
-                        if (valueObj != null) {
-                            String value = valueObj.toString();
-                            String displayText = part + " = " + value;
-                            TreeItem<String> entryItem = new TreeItem<>(displayText);
-                            itemToKeyMap.put(entryItem, key);
-                            current.getChildren().add(entryItem);
-                        } else {
-                            TreeItem<String> entryItem = new TreeItem<>(part);
-                            itemToKeyMap.put(entryItem, key);
-                            current.getChildren().add(entryItem);
-                        }
-                    } else {
-                        TreeItem<String> entryItem = new TreeItem<>(part);
-                        itemToKeyMap.put(entryItem, key);
-                        current.getChildren().add(entryItem);
-                    }
-                } catch (Exception e) {
-                    TreeItem<String> entryItem = new TreeItem<>(part);
-                    itemToKeyMap.put(entryItem, key);
-                    current.getChildren().add(entryItem);
-                }
+                TreeItem<String> entryItem = new TreeItem<>(part);
+                itemToKeyMap.put(entryItem, key);
+                current.getChildren().add(entryItem);
             } else {
                 TreeItem<String> child = findChild(current, part);
                 if (child == null) {
@@ -290,6 +263,15 @@ public class SidebarNetworkTablesChooser {
                 addEntryToTree(root, entry.getKey(), entry.getValue());
             }
         }
+    }
+
+    private static int computeEntriesSignature(Map<String, NetworkTableEntry> entries,
+            Set<String> chooserPaths, Set<String> fieldPaths) {
+        int hash = 31 * chooserPaths.hashCode() + fieldPaths.hashCode();
+        for (String key : entries.keySet()) {
+            hash = 31 * hash + key.hashCode();
+        }
+        return hash;
     }
 
     private static void startNetworkTablesUpdate() {
@@ -350,37 +332,44 @@ public class SidebarNetworkTablesChooser {
                                 continue;
                             }
 
-                            Platform.runLater(() -> {
-                                if (isDragging) {
-                                    return;
+                            String searchText = searchField.getText();
+                            boolean searchEmpty = searchText == null || searchText.trim().isEmpty();
+                            if (searchEmpty) {
+                                int newSignature = computeEntriesSignature(newEntries, sendableChooserPaths, fieldPaths);
+                                long now = System.currentTimeMillis();
+                                boolean dataChanged = newSignature != lastEntriesSignature;
+                                boolean intervalElapsed = (now - lastTreeUIRefreshTime) >= TREE_REFRESH_INTERVAL_MS;
+                                if (dataChanged && intervalElapsed) {
+                                    lastEntriesSignature = newSignature;
+                                    lastTreeUIRefreshTime = now;
+                                    Platform.runLater(() -> {
+                                        if (isDragging) return;
+                                        TreeItem<String> oldRoot = networkTablesTree.getRoot();
+                                        Set<String> expandedPaths = saveExpandedState(oldRoot);
+                                        Map<TreeItem<String>, String> oldItemToKeyMap = new HashMap<>(itemToKeyMap);
+                                        itemToKeyMap.clear();
+                                        TreeItem<String> newRoot = createTreeRoot();
+                                        populateTree(newRoot);
+                                        restoreExpandedState(newRoot, expandedPaths);
+                                        itemToKeyMap.putAll(oldItemToKeyMap);
+                                        networkTablesTree.setRoot(newRoot);
+                                    });
                                 }
-                                
-                                if (searchField.getText() == null || searchField.getText().trim().isEmpty()) {
-                                    TreeItem<String> oldRoot = networkTablesTree.getRoot();
-                                    Set<String> expandedPaths = saveExpandedState(oldRoot);
-
-                                    Map<TreeItem<String>, String> oldItemToKeyMap = new HashMap<>(itemToKeyMap);
-                                    itemToKeyMap.clear();
-                                    TreeItem<String> newRoot = createTreeRoot();
-                                    populateTree(newRoot);
-                                    restoreExpandedState(newRoot, expandedPaths);
-                                    
-                                    itemToKeyMap.putAll(oldItemToKeyMap);
-
-                                    networkTablesTree.setRoot(newRoot);
-                                } else {
-                                    filterTree(searchField.getText());
-                                }
-                            });
+                            }
                         }
                     } else {
                         if (!isDragging) {
-                            Platform.runLater(() -> {
-                                if (!isDragging) {
-                                    networkTablesTree.setRoot(createTreeRoot());
-                                    populateTree(networkTablesTree.getRoot());
-                                }
-                            });
+                            long now = System.currentTimeMillis();
+                            if ((now - lastTreeUIRefreshTime) >= TREE_REFRESH_INTERVAL_MS) {
+                                lastTreeUIRefreshTime = now;
+                                lastEntriesSignature = 0;
+                                Platform.runLater(() -> {
+                                    if (!isDragging) {
+                                        networkTablesTree.setRoot(createTreeRoot());
+                                        populateTree(networkTablesTree.getRoot());
+                                    }
+                                });
+                            }
                         }
                     }
                 } catch (InterruptedException e) {

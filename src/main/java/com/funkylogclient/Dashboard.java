@@ -19,6 +19,8 @@ import javafx.scene.input.ClipboardContent;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,9 +39,11 @@ public class Dashboard {
     private Map<String, GridPosition> widgetPositions = new HashMap<>(); // Track widget positions
     private Map<String, Long> lastUpdateTime = new HashMap<>();
     private ScheduledExecutorService updateExecutor;
+    private final List<Runnable> uiUpdatesReuse = new ArrayList<>();
     private Region[] gridSkeleton = null;
     private List<WidgetConfig> pendingWidgetsToLoad = new ArrayList<>();
     private ScheduledExecutorService loadRetryExecutor;
+    private SimDriverStationInput simDriverStationInput;
 
     // Helper class to track grid positions
     private static class GridPosition {
@@ -82,6 +86,38 @@ public class Dashboard {
         public List<WidgetConfig> widgets = new ArrayList<>();
 
         public DashboardConfig() {
+        }
+    }
+
+    /** Resolve dash config file so it works when run from project dir (dev) and when packaged (next to exe). */
+    private static File getConfigFile() {
+        File appDir = getApplicationDirectory();
+        File configInAppDir = new File(appDir, "dash.conf846");
+        if (configInAppDir.exists()) {
+            return configInAppDir;
+        }
+        File configInCwd = new File("dash.conf846");
+        if (configInCwd.exists()) {
+            return configInCwd;
+        }
+        return configInAppDir;
+    }
+
+    /** Directory containing the app (JAR or exe); when not running from a JAR, use current working dir. */
+    private static File getApplicationDirectory() {
+        try {
+            java.net.URL location = Dashboard.class.getProtectionDomain().getCodeSource().getLocation();
+            String path = URLDecoder.decode(location.getPath(), StandardCharsets.UTF_8);
+            if (path == null || path.isEmpty()) {
+                return new File(System.getProperty("user.dir"));
+            }
+            File jarOrDir = new File(path);
+            if (jarOrDir.isFile()) {
+                return jarOrDir.getParentFile();
+            }
+            return new File(System.getProperty("user.dir"));
+        } catch (Exception e) {
+            return new File(System.getProperty("user.dir"));
         }
     }
 
@@ -154,6 +190,7 @@ public class Dashboard {
 
         dashboardContainer.getChildren().addAll(titleBar, gridContainer);
 
+        setupSimDriverStationInput();
     }
     
     private Region[] gridBackgroundCells = null;
@@ -641,8 +678,6 @@ public class Dashboard {
     }
 
     private void updateWidgetGrid() {
-        System.out.println("updateWidgetGrid called from thread: " + Thread.currentThread().getName());
-        System.out.println("Updating widget grid with " + widgets.size() + " widgets");
 
         Platform.runLater(() -> {
             widgetGrid.getChildren().clear();
@@ -667,7 +702,7 @@ public class Dashboard {
                         widgetGrid.add(widget.getContainer(), pos.col, pos.row, spanCols, spanRows);
                     } else if (widget instanceof FieldViewWidget) {
                         int spanCols = Math.min(3, 5 - pos.col);
-                        int spanRows = 2;
+                        int spanRows = 3;
                         widgetGrid.add(widget.getContainer(), pos.col, pos.row, spanCols, spanRows);
                     } else if (widget instanceof AutoSelectorWidget) {
                         int spanCols = Math.min(2, 5 - pos.col);
@@ -685,7 +720,6 @@ public class Dashboard {
                 updateGridConstraints();
             }
 
-            System.out.println("Grid now has " + widgetGrid.getChildren().size() + " children");
         });
     }
 
@@ -710,7 +744,7 @@ public class Dashboard {
                     }
                 }
             } else if (widget instanceof FieldViewWidget) {
-                for (int r = 0; r < 2; r++) {
+                for (int r = 0; r < 3; r++) {
                     for (int c = 0; c < 3; c++) {
                         int rr = pos.row + r;
                         int cc = pos.col + c;
@@ -764,7 +798,7 @@ public class Dashboard {
                 }
 
                 long currentTime = System.currentTimeMillis();
-                List<Runnable> uiUpdates = new ArrayList<>();
+                uiUpdatesReuse.clear();
 
                 for (Map.Entry<String, DashboardWidget> entry : widgets.entrySet()) {
                     String key = entry.getKey();
@@ -775,9 +809,9 @@ public class Dashboard {
 
                     long updateInterval;
                     if (widget instanceof GraphWidget) {
-                        updateInterval = 50;
+                        updateInterval = 100;
                     } else if (widget instanceof FieldViewWidget) {
-                        updateInterval = 50;
+                        updateInterval = 100;
                     } else if (widget instanceof NumberWidget) {
                         updateInterval = 250;
                     } else {
@@ -808,7 +842,7 @@ public class Dashboard {
                                     if (value != null) {
                                         if (timeSinceUpdate >= 500) {
                                             final Object finalValue = value;
-                                            uiUpdates.add(() -> widget.updateValue(finalValue));
+                                            uiUpdatesReuse.add(() -> widget.updateValue(finalValue));
                                             lastUpdateTime.put(key, currentTime);
                                         }
                                     }
@@ -816,17 +850,26 @@ public class Dashboard {
                             }
                         } else if (widget instanceof FieldViewWidget) {
                             NetworkTable fieldTable = table.getSubTable(entryKey);
-                            NetworkTableEntry robotEntry = fieldTable.getEntry("Robot");
-                            if (robotEntry.exists()) {
-                                NetworkTableValue ntValue = robotEntry.getValue();
-                                if (ntValue != null) {
-                                    Object value = ntValue.getValue();
-                                    if (value != null) {
-                                        final Object finalValue = value;
-                                        uiUpdates.add(() -> widget.updateValue(finalValue));
-                                        lastUpdateTime.put(key, currentTime);
-                                    }
+                            final Map<String, Object> allFieldObjects = new HashMap<>();
+                            for (String fieldKey : fieldTable.getKeys()) {
+                                NetworkTableEntry fieldEntry = fieldTable.getEntry(fieldKey);
+                                if (!fieldEntry.exists()) continue;
+                                NetworkTableValue ntValue = fieldEntry.getValue();
+                                if (ntValue == null) continue;
+                                Object val = ntValue.getValue();
+                                if (val == null) continue;
+                                allFieldObjects.put(fieldKey, val);
+                            }
+                            final Object robotValue = allFieldObjects.get("Robot");
+                            final FieldViewWidget fvWidget = (FieldViewWidget) widget;
+                            uiUpdatesReuse.add(() -> {
+                                if (robotValue != null) {
+                                    fvWidget.updateValue(robotValue);
                                 }
+                                fvWidget.setFieldObjects(allFieldObjects);
+                            });
+                            if (robotValue != null) {
+                                lastUpdateTime.put(key, currentTime);
                             }
                         } else {
                             NetworkTableEntry ntEntry = table.getEntry(entryKey);
@@ -837,7 +880,7 @@ public class Dashboard {
                                     Object value = ntValue.getValue();
                                     if (value != null) {
                                         final Object finalValue = value;
-                                        uiUpdates.add(() -> widget.updateValue(finalValue));
+                                        uiUpdatesReuse.add(() -> widget.updateValue(finalValue));
                                         lastUpdateTime.put(key, currentTime);
                                     }
                                 }
@@ -847,15 +890,16 @@ public class Dashboard {
                     }
                 }
                 
-                if (!uiUpdates.isEmpty()) {
+                if (!uiUpdatesReuse.isEmpty()) {
+                    final List<Runnable> runNow = new ArrayList<>(uiUpdatesReuse);
                     Platform.runLater(() -> {
-                        for (Runnable update : uiUpdates) {
+                        for (Runnable update : runNow) {
                             update.run();
                         }
                     });
                 }
             }
-        }, 0, 200, TimeUnit.MILLISECONDS);
+        }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     public VBox getContainer() {
@@ -864,6 +908,10 @@ public class Dashboard {
 
     public void shutdown() {
         saveConfiguration();
+        if (simDriverStationInput != null) {
+            simDriverStationInput.stop();
+            simDriverStationInput = null;
+        }
         for (DashboardWidget widget : widgets.values()) {
             if (widget instanceof AutoSelectorWidget) {
                 ((AutoSelectorWidget) widget).shutdown();
@@ -874,6 +922,24 @@ public class Dashboard {
         }
         if (loadRetryExecutor != null && !loadRetryExecutor.isShutdown()) {
             loadRetryExecutor.shutdown();
+        }
+    }
+
+    private void setupSimDriverStationInput() {
+        simDriverStationInput = new SimDriverStationInput();
+        dashboardContainer.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            Platform.runLater(() -> {
+                if (simDriverStationInput != null) {
+                    simDriverStationInput.setScene(newScene);
+                    if (newScene != null) {
+                        simDriverStationInput.start();
+                    }
+                }
+            });
+        });
+        if (dashboardContainer.getScene() != null) {
+            simDriverStationInput.setScene(dashboardContainer.getScene());
+            simDriverStationInput.start();
         }
     }
 
@@ -899,9 +965,9 @@ public class Dashboard {
             }
 
             ObjectMapper mapper = new ObjectMapper();
-            File configFile = new File("dash.conf846");
+            File configFile = getConfigFile();
             mapper.writerWithDefaultPrettyPrinter().writeValue(configFile, config);
-            System.out.println("Dashboard configuration saved to dash.conf846");
+            System.out.println("Dashboard configuration saved to " + configFile.getAbsolutePath());
         } catch (IOException e) {
             System.err.println("Failed to save dashboard configuration: " + e.getMessage());
         }
@@ -909,7 +975,7 @@ public class Dashboard {
 
     private void loadConfiguration() {
         try {
-            File configFile = new File("dash.conf846");
+            File configFile = getConfigFile();
             if (!configFile.exists()) {
                 System.out.println("No dashboard configuration found, starting with empty dashboard");
                 return;
@@ -919,7 +985,7 @@ public class Dashboard {
             DashboardConfig config = mapper.readValue(configFile, DashboardConfig.class);
 
             System.out.println(
-                    "Loading dashboard configuration from dash.conf846 - " + config.widgets.size() + " widgets");
+                    "Loading dashboard configuration from " + configFile.getAbsolutePath() + " - " + config.widgets.size() + " widgets");
 
             loadConfigWidgetsImmediately(config.widgets);
 
@@ -1292,7 +1358,7 @@ public class Dashboard {
                                 spanRows = 2;
                             } else if (w instanceof FieldViewWidget) {
                                 spanCols = 3;
-                                spanRows = 2;
+                                spanRows = 3;
                             } else if (w instanceof AutoSelectorWidget) {
                                 spanCols = 2;
                                 spanRows = 1;

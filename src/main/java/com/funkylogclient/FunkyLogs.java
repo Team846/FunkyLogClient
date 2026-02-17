@@ -238,6 +238,7 @@ public class FunkyLogs extends Application {
                 dashboard.shutdown();
             }
             SidebarNetworkTablesChooser.shutdown();
+            SidebarJoystickInput.shutdown();
             Platform.exit();
         });
         primaryStage.show();
@@ -263,7 +264,7 @@ public class FunkyLogs extends Application {
                     if (isCancelled()) {
                         break;
                     }
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                     try {
                         long currentVersion = FunkyLogSorter.getFilterVersion();
                         if (currentVersion != lastKnownVersion) {
@@ -655,6 +656,7 @@ public class FunkyLogs extends Application {
                 dashboard.shutdown();
             }
             SidebarNetworkTablesChooser.shutdown();
+            SidebarJoystickInput.shutdown();
             animateClose(primaryStage);
         });
         Button minimizeButton = createWindowsButton("—", false, () -> animateMinimize(primaryStage));
@@ -1055,6 +1057,7 @@ public class FunkyLogs extends Application {
                 dashboard.shutdown();
             }
             SidebarNetworkTablesChooser.shutdown();
+            SidebarJoystickInput.shutdown();
             System.exit(0);
         });
         closeAnim.play();

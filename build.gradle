@@ -18,6 +18,7 @@ compileJava {
 
 repositories {
     mavenCentral()
+    maven { url = 'https://jitpack.io' }
     maven {
         url = 'https://frcmaven.wpi.edu/artifactory/release/'
     }
@@ -34,6 +35,11 @@ dependencies {
     
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
+    implementation 'net.java.jinput:jinput:2.0.9'
+    runtimeOnly 'net.java.jinput:jinput:2.0.9:natives-all'
+    // XInput support so Xbox / "XINPUT compatible HID" controllers are detected on Windows
+    implementation 'com.github.RalleYTN:XInput-Plugin-for-JInput:1.2.1'
 }
 
 javafx {
@@ -50,7 +56,9 @@ run {
     jvmArgs = [
         '-Djava.library.path=' + new File(projectDir, 'build/libs/windows/x86-64').absolutePath,
         '-Dwpiutil.debug=true',
-        '-Dwpiutil.nativelibdir=' + new File(projectDir, 'build/libs/windows/x86-64').absolutePath
+        '-Dwpiutil.nativelibdir=' + new File(projectDir, 'build/libs/windows/x86-64').absolutePath,
+        '-XX:+UseG1GC',
+        '-XX:MaxGCPauseMillis=20'
     ]
 }
 
@@ -77,6 +85,17 @@ task unpackNativeLibs(type: Copy) {
     into 'build/libs'
 }
 
+task unpackJInputNatives(type: Copy) {
+    def jinputNatives = configurations.runtimeClasspath.filter {
+        it.name.contains('jinput') && it.name.contains('natives')
+    }
+    onlyIf { !jinputNatives.isEmpty() }
+    from(jinputNatives.collect { zipTree(it) })
+    include '**/*.dll'
+    eachFile { fcd -> fcd.path = fcd.name }
+    into 'build/libs/windows/x86-64'
+}
+
 tasks.named('startScripts').configure { 
     dependsOn unpackNativeLibs 
     mustRunAfter unpackNativeLibs 
@@ -92,7 +111,8 @@ tasks.named('distTar').configure {
     mustRunAfter unpackNativeLibs 
 }
 
-run.dependsOn unpackNativeLibs
+unpackJInputNatives.mustRunAfter unpackNativeLibs
+run.dependsOn unpackNativeLibs, unpackJInputNatives
 
 jar {
     from {
@@ -111,7 +131,7 @@ clean {
 build.dependsOn unpackNativeLibs
 
 task prepareJpackageInput(type: Copy) {
-    dependsOn jar, unpackNativeLibs
+    dependsOn jar, unpackNativeLibs, unpackJInputNatives
     
     from jar.archiveFile
     into 'build/jpackage-input'
@@ -136,7 +156,7 @@ task jpackageExe(type: Exec) {
         if (!jpackageExePath.exists()) {
             throw new GradleException("jpackage not found at ${jpackageExePath}. Please use JDK 17 or later (not JRE).")
         }
-        
+        delete 'build/dist/chimpcheck'
         println "Building Windows EXE bundle with jpackage..."
         
         jpackageCmd = [
@@ -149,7 +169,9 @@ task jpackageExe(type: Exec) {
             '--main-class', 'com.funkylogclient.Main',
             '--dest', 'build/dist',
             '--java-options', '-Djava.library.path=$APPDIR\\windows\\x86-64',
-            '--java-options', '-Dwpiutil.nativelibdir=$APPDIR\\windows'
+            '--java-options', '-Dwpiutil.nativelibdir=$APPDIR\\windows',
+            '--java-options', '-XX:+UseG1GC',
+            '--java-options', '-XX:MaxGCPauseMillis=20'
         ]
         
         commandLine jpackageCmd
