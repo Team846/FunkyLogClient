@@ -30,14 +30,16 @@ dependencies {
     
     implementation 'edu.wpi.first.ntcore:ntcore-java:2025.3.2'
     implementation 'edu.wpi.first.ntcore:ntcore-jni:2025.3.2:windowsx86-64'
+    implementation 'edu.wpi.first.ntcore:ntcore-jni:2025.3.2:osxuniversal'
     implementation 'edu.wpi.first.wpiutil:wpiutil-java:2025.3.2'
     implementation 'edu.wpi.first.wpiutil:wpiutil-jni:2025.3.2:windowsx86-64'
+    implementation 'edu.wpi.first.wpiutil:wpiutil-jni:2025.3.2:osxuniversal'
     
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 
-    implementation 'net.java.jinput:jinput:2.0.9'
-    runtimeOnly 'net.java.jinput:jinput:2.0.9:natives-all'
+    implementation 'net.java.jinput:jinput:2.0.10'
+    runtimeOnly 'net.java.jinput:jinput:2.0.10:natives-all'
     // XInput support so Xbox / "XINPUT compatible HID" controllers are detected on Windows
     implementation 'com.github.RalleYTN:XInput-Plugin-for-JInput:1.2.1'
 }
@@ -53,10 +55,16 @@ application {
 
 run {
     workingDir = projectDir
+    def osName = System.getProperty("os.name").toLowerCase()
+    def libPath = new File(projectDir, 'build/libs/windows/x86-64').absolutePath
+    if (osName.contains("mac")) {
+        libPath = new File(projectDir, 'build/libs/osx/universal').absolutePath
+    }
+
     jvmArgs = [
-        '-Djava.library.path=' + new File(projectDir, 'build/libs/windows/x86-64').absolutePath,
+        '-Djava.library.path=' + libPath,
         '-Dwpiutil.debug=true',
-        '-Dwpiutil.nativelibdir=' + new File(projectDir, 'build/libs/windows/x86-64').absolutePath,
+        '-Dwpiutil.nativelibdir=' + libPath,
         '-XX:+UseG1GC',
         '-XX:MaxGCPauseMillis=20'
     ]
@@ -82,6 +90,7 @@ task unpackNativeLibs(type: Copy) {
     eachFile { println "Extracting: ${it.path}" }
     include '**/*.dll'
     include '**/*.so'
+    include '**/*.dylib'
     into 'build/libs'
 }
 
@@ -92,8 +101,16 @@ task unpackJInputNatives(type: Copy) {
     onlyIf { !jinputNatives.isEmpty() }
     from(jinputNatives.collect { zipTree(it) })
     include '**/*.dll'
+    include '**/*.jnilib'
+    include '**/*.dylib'
     eachFile { fcd -> fcd.path = fcd.name }
-    into 'build/libs/windows/x86-64'
+    
+    def osName = System.getProperty("os.name").toLowerCase()
+    if (osName.contains("mac")) {
+        into 'build/libs/osx/universal'
+    } else {
+        into 'build/libs/windows/x86-64'
+    }
 }
 
 tasks.named('startScripts').configure { 
@@ -138,6 +155,9 @@ task prepareJpackageInput(type: Copy) {
     
     from('build/libs/windows') {
         into 'windows'
+    }
+    from('build/libs/osx') {
+        into 'osx'
     }
 }
 
@@ -185,5 +205,58 @@ task jpackageExe(type: Exec) {
     }
 }
 
-build.finalizedBy jpackageExe
+task jpackageMac(type: Exec) {
+    dependsOn prepareJpackageInput
+    
+    description = 'Create macOS .app bundle with bundled JRE'
+    group = 'build'
+    
+    def javaHome = System.getProperty('java.home')
+    def jpackagePath = new File(javaHome, 'bin/jpackage')
+    
+    def jpackageCmd = []
+    
+    doFirst {
+        if (!jpackagePath.exists()) {
+            throw new GradleException("jpackage not found at ${jpackagePath}. Please use JDK 17 or later (not JRE).")
+        }
+        delete 'build/dist/ChimpCheck.app'
+        println "Building macOS .app bundle with jpackage..."
+        
+        jpackageCmd = [
+            jpackagePath.absolutePath,
+            '--type', 'app-image',
+            '--name', 'ChimpCheck',
+            '--app-version', version,
+            '--input', 'build/jpackage-input',
+            '--main-jar', "funkylogclient-${version}.jar",
+            '--main-class', 'com.funkylogclient.Main',
+            '--dest', 'build/dist',
+            '--java-options', '-Djava.library.path=$APPDIR/osx/universal',
+            '--java-options', '-Dwpiutil.nativelibdir=$APPDIR/osx/universal',
+            '--java-options', '-XX:+UseG1GC',
+            '--java-options', '-XX:MaxGCPauseMillis=20'
+        ]
+        
+        def iconFile = file('src/main/resources/com/funkylogclient/logo846.icns')
+        if (iconFile.exists()) {
+            jpackageCmd.addAll(['--icon', iconFile.absolutePath])
+        }
+        
+        commandLine jpackageCmd
+    }
+    
+    doLast {
+        println ""
+        println "=========================================="
+        println "Build complete: build/dist/ChimpCheck.app"
+        println "=========================================="
+    }
+}
 
+def currentOs = System.getProperty('os.name').toLowerCase()
+if (currentOs.contains('mac')) {
+    build.finalizedBy jpackageMac
+} else {
+    build.finalizedBy jpackageExe
+}

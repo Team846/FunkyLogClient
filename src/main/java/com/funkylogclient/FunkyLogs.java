@@ -20,6 +20,7 @@ import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.Screen;
 import javafx.scene.Cursor;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -38,6 +39,7 @@ public class FunkyLogs extends Application {
     private static Dashboard dashboard;
     private double savedX, savedY, savedWidth, savedHeight;
     private boolean isAnimating = false;
+    private boolean isMaximizedManual = false;
 
     private double xl = 100;
     private double xr = 1100;
@@ -229,9 +231,18 @@ public class FunkyLogs extends Application {
 
         root.setRight(sidebar);
 
-        Scene scene = new Scene(rootStack, Color.TRANSPARENT);
+        String osName = System.getProperty("os.name").toLowerCase();
+        boolean isMac = osName.contains("mac");
+
+        Scene scene;
+        if (isMac) {
+            scene = new Scene(rootStack);
+            primaryStage.initStyle(StageStyle.DECORATED);
+        } else {
+            scene = new Scene(rootStack, Color.TRANSPARENT);
+            primaryStage.initStyle(StageStyle.TRANSPARENT);
+        }
         scene.getStylesheets().add(getClass().getResource("dark-theme.css").toExternalForm());
-        primaryStage.initStyle(StageStyle.TRANSPARENT);
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(event -> {
             if (dashboard != null) {
@@ -245,17 +256,21 @@ public class FunkyLogs extends Application {
 
         setStageSize(primaryStage);
 
-        rootStack.setStyle(
-                "-fx-background-radius: 8; -fx-background-color: " + Styles.BG_DARKEST + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 20, 0, 0, 0);");
-        
-        javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
-        clip.widthProperty().bind(rootStack.widthProperty());
-        clip.heightProperty().bind(rootStack.heightProperty());
-        clip.setArcWidth(16);
-        clip.setArcHeight(16);
-        rootStack.setClip(clip);
-        
-        createResizeRegions(rootStack, primaryStage);
+        if (isMac) {
+            rootStack.setStyle("-fx-background-color: " + Styles.BG_DARKEST + ";");
+        } else {
+            rootStack.setStyle(
+                    "-fx-background-radius: 8; -fx-background-color: " + Styles.BG_DARKEST + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 20, 0, 0, 0);");
+            
+            javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
+            clip.widthProperty().bind(rootStack.widthProperty());
+            clip.heightProperty().bind(rootStack.heightProperty());
+            clip.setArcWidth(16);
+            clip.setArcHeight(16);
+            rootStack.setClip(clip);
+            
+            createResizeRegions(rootStack, primaryStage);
+        }
 
         Task<Void> updateTask = new Task<Void>() {
             @Override
@@ -354,8 +369,12 @@ public class FunkyLogs extends Application {
         final boolean[] isResizing = new boolean[1];
         final Cursor[] resizeType = new Cursor[1];
 
+        String os = System.getProperty("os.name").toLowerCase();
+        boolean isMac = os.contains("mac");
+        String resizeStyle = isMac ? "-fx-background-color: rgba(0, 0, 0, 0.01);" : "-fx-background-color: transparent;";
+
         Region topEdge = new Region();
-        topEdge.setStyle("-fx-background-color: transparent;");
+        topEdge.setStyle(resizeStyle);
         topEdge.setMinHeight(resizeZone);
         topEdge.setMaxHeight(resizeZone);
         topEdge.setPickOnBounds(true);
@@ -364,7 +383,7 @@ public class FunkyLogs extends Application {
         topEdge.prefWidthProperty().bind(rootStack.widthProperty());
 
         Region bottomEdge = new Region();
-        bottomEdge.setStyle("-fx-background-color: transparent;");
+        bottomEdge.setStyle(resizeStyle);
         bottomEdge.setMinHeight(resizeZone);
         bottomEdge.setMaxHeight(resizeZone);
         bottomEdge.setPickOnBounds(true);
@@ -373,7 +392,7 @@ public class FunkyLogs extends Application {
         bottomEdge.prefWidthProperty().bind(rootStack.widthProperty());
 
         Region leftEdge = new Region();
-        leftEdge.setStyle("-fx-background-color: transparent;");
+        leftEdge.setStyle(resizeStyle);
         leftEdge.setMinWidth(resizeZone);
         leftEdge.setMaxWidth(resizeZone);
         leftEdge.setPickOnBounds(true);
@@ -383,7 +402,7 @@ public class FunkyLogs extends Application {
         leftEdge.setMinHeight(0);
 
         Region rightEdge = new Region();
-        rightEdge.setStyle("-fx-background-color: transparent;");
+        rightEdge.setStyle(resizeStyle);
         rightEdge.setMinWidth(resizeZone);
         rightEdge.setMaxWidth(resizeZone);
         rightEdge.setPrefWidth(resizeZone);
@@ -404,7 +423,7 @@ public class FunkyLogs extends Application {
         });
 
         Region topLeftCorner = new Region();
-        topLeftCorner.setStyle("-fx-background-color: transparent;");
+        topLeftCorner.setStyle(resizeStyle);
         topLeftCorner.setMinSize(resizeZone, resizeZone);
         topLeftCorner.setMaxSize(resizeZone, resizeZone);
         topLeftCorner.setPickOnBounds(true);
@@ -412,7 +431,7 @@ public class FunkyLogs extends Application {
         topLeftCorner.setCursor(Cursor.NW_RESIZE);
 
         Region topRightCorner = new Region();
-        topRightCorner.setStyle("-fx-background-color: transparent;");
+        topRightCorner.setStyle(resizeStyle);
         topRightCorner.setMinSize(resizeZone, resizeZone);
         topRightCorner.setMaxSize(resizeZone, resizeZone);
         topRightCorner.setPickOnBounds(true);
@@ -420,7 +439,7 @@ public class FunkyLogs extends Application {
         topRightCorner.setCursor(Cursor.NE_RESIZE);
 
         Region bottomLeftCorner = new Region();
-        bottomLeftCorner.setStyle("-fx-background-color: transparent;");
+        bottomLeftCorner.setStyle(resizeStyle);
         bottomLeftCorner.setMinSize(resizeZone, resizeZone);
         bottomLeftCorner.setMaxSize(resizeZone, resizeZone);
         bottomLeftCorner.setPickOnBounds(true);
@@ -428,7 +447,7 @@ public class FunkyLogs extends Application {
         bottomLeftCorner.setCursor(Cursor.SW_RESIZE);
 
         Region bottomRightCorner = new Region();
-        bottomRightCorner.setStyle("-fx-background-color: transparent;");
+        bottomRightCorner.setStyle(resizeStyle);
         bottomRightCorner.setMinSize(resizeZone, resizeZone);
         bottomRightCorner.setMaxSize(resizeZone, resizeZone);
         bottomRightCorner.setPickOnBounds(true);
@@ -468,7 +487,6 @@ public class FunkyLogs extends Application {
         resizePane.setBottom(bottomBox);
         resizePane.setLeft(leftBox);
         resizePane.setRight(rightBox);
-        resizePane.setMouseTransparent(true);
         resizePane.setPickOnBounds(false);
         resizePane.prefWidthProperty().bind(rootStack.widthProperty());
         resizePane.prefHeightProperty().bind(rootStack.heightProperty());
@@ -875,7 +893,7 @@ public class FunkyLogs extends Application {
 
         button.setOnAction(e -> {
             e.consume();
-            if (primaryStage.isMaximized()) {
+            if (primaryStage.isMaximized() || isMaximizedManual) {
                 animateRestore(primaryStage, button);
             } else {
                 animateMaximize(primaryStage, button);
@@ -949,12 +967,23 @@ public class FunkyLogs extends Application {
         fadeIn.setInterpolator(javafx.animation.Interpolator.EASE_OUT);
         
         fadeIn.setOnFinished(e -> {
-            stage.setMaximized(false);
-            Platform.runLater(() -> {
+            if (isMaximizedManual) {
+                isMaximizedManual = false;
                 stage.setX(endX);
                 stage.setY(endY);
                 stage.setWidth(endWidth);
                 stage.setHeight(endHeight);
+                button.setText("□");
+            } else {
+                stage.setMaximized(false);
+            }
+            Platform.runLater(() -> {
+                if (!isMaximizedManual) { // already set if manual
+                    stage.setX(endX);
+                    stage.setY(endY);
+                    stage.setWidth(endWidth);
+                    stage.setHeight(endHeight);
+                }
                 
                 FadeTransition fadeOut = new FadeTransition(Duration.millis(120), fadeOverlay);
                 fadeOut.setFromValue(1.0);
@@ -995,7 +1024,24 @@ public class FunkyLogs extends Application {
         fadeIn.setInterpolator(javafx.animation.Interpolator.EASE_OUT);
         
         fadeIn.setOnFinished(e -> {
-            stage.setMaximized(true);
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("mac")) {
+                isMaximizedManual = true;
+                ObservableList<Screen> screens = Screen.getScreensForRectangle(stage.getX(), stage.getY(), stage.getWidth(), stage.getHeight());
+                Rectangle2D bounds;
+                if (screens.size() > 0) {
+                    bounds = screens.get(0).getVisualBounds();
+                } else {
+                    bounds = Screen.getPrimary().getVisualBounds();
+                }
+                stage.setX(bounds.getMinX());
+                stage.setY(bounds.getMinY());
+                stage.setWidth(bounds.getWidth());
+                stage.setHeight(bounds.getHeight());
+                button.setText("❐");
+            } else {
+                stage.setMaximized(true);
+            }
             
             Platform.runLater(() -> {
                 FadeTransition fadeOut = new FadeTransition(Duration.millis(120), fadeOverlay);
