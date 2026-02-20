@@ -54,9 +54,17 @@ public class GraphWidget extends DashboardWidget {
 
     public GraphWidget(String title, String key) {
         super(title, key);
+        this.title = title;
+        this.key = key;
         createGraph();
         setupContextMenu();
     }
+
+    @Override
+    public int getColSpan() { return 2; }
+
+    @Override
+    public int getRowSpan() { return 2; }
 
     private void createGraph() {
         contentBox.setStyle("-fx-background-color: transparent; -fx-background-radius: 0 0 8 8;");

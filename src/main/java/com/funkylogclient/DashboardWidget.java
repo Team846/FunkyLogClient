@@ -17,6 +17,20 @@ public abstract class DashboardWidget {
     protected VBox contentBox;
     protected Label titleLabel;
     protected Rectangle background;
+    protected Runnable resizeRequestCallback;
+
+    public void setResizeRequestCallback(Runnable cb) {
+        this.resizeRequestCallback = cb;
+    }
+
+    protected void requestResize() {
+        if (resizeRequestCallback != null) {
+            resizeRequestCallback.run();
+        }
+    }
+
+    public int getColSpan() { return 1; }
+    public int getRowSpan() { return 1; }
 
     public DashboardWidget(String title, String key) {
         this.title = title;

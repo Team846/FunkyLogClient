@@ -22,11 +22,30 @@ public class BooleanWidget extends DashboardWidget {
     private boolean isUpdating = false;
     private Text toggleLabel;
 
+    private Runnable removeCallback;
+
+    public void setRemoveCallback(Runnable callback) {
+        this.removeCallback = callback;
+    }
+
+    private void setupContextMenu() {
+        javafx.scene.control.ContextMenu contextMenu = new javafx.scene.control.ContextMenu();
+        javafx.scene.control.MenuItem removeItem = new javafx.scene.control.MenuItem("Remove Widget");
+        removeItem.setOnAction(e -> {
+            if (removeCallback != null) removeCallback.run();
+        });
+        contextMenu.getItems().add(removeItem);
+        container.setOnContextMenuRequested(event -> {
+            contextMenu.show(container, event.getScreenX(), event.getScreenY());
+        });
+    }
+
     public BooleanWidget(String title, String key) {
         super(title, key);
         this.isEditable = key.startsWith("Preferences/");
         contentBox.setPadding(new javafx.geometry.Insets(6));
         createBooleanDisplay();
+        setupContextMenu();
     }
 
     private void createBooleanDisplay() {

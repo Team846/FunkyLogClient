@@ -16,8 +16,10 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
 
 public class AutoSelectorWidget extends DashboardWidget {
+    private String[] lastKnownOptions = new String[0];
     private ComboBox<String> modeComboBox;
     private Circle statusIndicator;
     private List<String> autoModes;
@@ -35,6 +37,12 @@ public class AutoSelectorWidget extends DashboardWidget {
         setupContextMenu();
         startContinuousWrite();
     }
+
+    @Override
+    public int getColSpan() { return 2; }
+
+    @Override
+    public int getRowSpan() { return 1; }
 
     private void createAutoSelector() {
         autoModes = new ArrayList<>();
@@ -291,6 +299,15 @@ public class AutoSelectorWidget extends DashboardWidget {
                     if (newNetworkValue != null && !newNetworkValue.equals(currentNetworkValue)) {
                         currentNetworkValue = newNetworkValue;
                         updateStatusIndicator();
+                    }
+                }
+
+                NetworkTableEntry optionsEntry = chooserTable.getEntry("options");
+                if (optionsEntry != null && optionsEntry.exists()) {
+                    String[] currentOptions = optionsEntry.getStringArray(new String[0]);
+                    if (currentOptions != null && !Arrays.equals(currentOptions, lastKnownOptions)) {
+                        lastKnownOptions = currentOptions;
+                        Platform.runLater(this::refreshAutoModes);
                     }
                 }
 

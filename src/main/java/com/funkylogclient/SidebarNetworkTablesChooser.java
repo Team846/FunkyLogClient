@@ -36,6 +36,7 @@ public class SidebarNetworkTablesChooser {
     private static Map<TreeItem<String>, String> itemToKeyMap = new HashMap<>();
     private static Set<String> sendableChooserPaths = new HashSet<>();
     private static Set<String> fieldPaths = new HashSet<>();
+    private static Set<String> commandPaths = new HashSet<>();
     private static volatile boolean isDragging = false;
     private static Thread updateThread = null;
     private static final long TREE_REFRESH_INTERVAL_MS = 3000;
@@ -112,10 +113,12 @@ public class SidebarNetworkTablesChooser {
 
                     boolean isChooser = false;
                     boolean isField = false;
+                    boolean isCommand = false;
                     if (treeItem != null && !isEntry) {
                         String fullPath = buildFullPath(treeItem);
                         isChooser = sendableChooserPaths.contains(fullPath);
                         isField = fieldPaths.contains(fullPath);
+                        isCommand = commandPaths.contains(fullPath);
                     }
 
                     if (isEntry) {
@@ -124,6 +127,8 @@ public class SidebarNetworkTablesChooser {
                         setStyle(Styles.TREE_CELL_VALUE_STYLE.replace("normal", "bold"));
                     } else if (isField) {
                         setStyle(Styles.TREE_CELL_FIELD_STYLE);
+                    } else if (isCommand) {
+                        setStyle(Styles.TREE_CELL_VALUE_STYLE.replace("normal", "bold").replace(Styles.TEXT_PRIMARY, "#4CAF50")); // Give it a distinct color 
                     } else {
                         setStyle(Styles.TREE_CELL_DEFAULT_STYLE);
                     }
@@ -266,8 +271,8 @@ public class SidebarNetworkTablesChooser {
     }
 
     private static int computeEntriesSignature(Map<String, NetworkTableEntry> entries,
-            Set<String> chooserPaths, Set<String> fieldPaths) {
-        int hash = 31 * chooserPaths.hashCode() + fieldPaths.hashCode();
+            Set<String> chooserPaths, Set<String> fieldPaths, Set<String> cmdPaths) {
+        int hash = 31 * chooserPaths.hashCode() + fieldPaths.hashCode() + 17 * cmdPaths.hashCode();
         for (String key : entries.keySet()) {
             hash = 31 * hash + key.hashCode();
         }
@@ -295,6 +300,7 @@ public class SidebarNetworkTablesChooser {
 
                                 Set<String> newChooserPaths = new HashSet<>();
                                 Set<String> newFieldPaths = new HashSet<>();
+                                Set<String> newCommandPaths = new HashSet<>();
                                 
                                 boolean skipUpdate = false;
                                 synchronized (SidebarNetworkTablesChooser.class) {
@@ -303,6 +309,7 @@ public class SidebarNetworkTablesChooser {
                                     } else {
                                         sendableChooserPaths = newChooserPaths;
                                         fieldPaths = newFieldPaths;
+                                        commandPaths = newCommandPaths;
                                     }
                                 }
                                 
@@ -335,7 +342,7 @@ public class SidebarNetworkTablesChooser {
                             String searchText = searchField.getText();
                             boolean searchEmpty = searchText == null || searchText.trim().isEmpty();
                             if (searchEmpty) {
-                                int newSignature = computeEntriesSignature(newEntries, sendableChooserPaths, fieldPaths);
+                                int newSignature = computeEntriesSignature(newEntries, sendableChooserPaths, fieldPaths, commandPaths);
                                 long now = System.currentTimeMillis();
                                 boolean dataChanged = newSignature != lastEntriesSignature;
                                 boolean intervalElapsed = (now - lastTreeUIRefreshTime) >= TREE_REFRESH_INTERVAL_MS;
@@ -390,6 +397,7 @@ public class SidebarNetworkTablesChooser {
             itemToKeyMap.clear();
             sendableChooserPaths.clear();
             fieldPaths.clear();
+            commandPaths.clear();
         }
     }
 
@@ -416,9 +424,12 @@ public class SidebarNetworkTablesChooser {
                         isValidKey = entries.containsKey(key) || 
                                     sendableChooserPaths.contains(key) || 
                                     fieldPaths.contains(key) ||
+                                    commandPaths.contains(key) ||
                                     sendableChooserPaths.contains(fullPath) ||
                                     fieldPaths.contains(fullPath) ||
-                                    (key.endsWith("/active") && sendableChooserPaths.contains(key.substring(0, key.length() - 7)));
+                                    commandPaths.contains(fullPath) ||
+                                    (key.endsWith("/active") && sendableChooserPaths.contains(key.substring(0, key.length() - 7))) ||
+                                    (key.endsWith("/running") && commandPaths.contains(key.substring(0, key.length() - 8)));
                     }
                     
                     if (isValidKey) {
@@ -491,6 +502,8 @@ public class SidebarNetworkTablesChooser {
                 return fullPath;
             } else if (sendableChooserPaths.contains(fullPath)) {
                 return fullPath + "/active";
+            } else if (commandPaths.contains(fullPath)) {
+                return fullPath + "/running";
             } else if (fieldPaths.contains(fullPath)) {
                 return fullPath;
             }
@@ -567,6 +580,16 @@ public class SidebarNetworkTablesChooser {
 
                 if (hasActive && hasOptions) {
                     sendableChooserPaths.add(prefix);
+                }
+
+                if (hasType) {
+                    NetworkTableEntry typeEntry = table.getEntry(".type");
+                    if (typeEntry.exists()) {
+                        String typeStr = typeEntry.getString("");
+                        if ("Command".equals(typeStr)) {
+                            commandPaths.add(prefix);
+                        }
+                    }
                 }
 
                 if (hasRobot || (hasType && hasPoseField)) {

@@ -672,6 +672,7 @@ public class Dashboard {
         }
 
         if (widget != null) {
+            widget.setResizeRequestCallback(() -> updateWidgetGrid());
             widgets.put(key, widget);
             updateWidgetGrid();
         }
@@ -696,17 +697,9 @@ public class Dashboard {
                     GridPane.setVgrow(widget.getContainer(), Priority.NEVER);
                     widget.getContainer().setMaxHeight(Region.USE_COMPUTED_SIZE);
                     widget.getContainer().setMaxWidth(Region.USE_COMPUTED_SIZE);
-                    if (widget instanceof GraphWidget) {
-                        int spanCols = Math.min(2, 5 - pos.col);
-                        int spanRows = 2;
-                        widgetGrid.add(widget.getContainer(), pos.col, pos.row, spanCols, spanRows);
-                    } else if (widget instanceof FieldViewWidget) {
-                        int spanCols = Math.min(3, 5 - pos.col);
-                        int spanRows = 3;
-                        widgetGrid.add(widget.getContainer(), pos.col, pos.row, spanCols, spanRows);
-                    } else if (widget instanceof AutoSelectorWidget) {
-                        int spanCols = Math.min(2, 5 - pos.col);
-                        int spanRows = 1;
+                    int spanCols = Math.min(widget.getColSpan(), 5 - pos.col);
+                    int spanRows = widget.getRowSpan();
+                    if (spanCols > 1 || spanRows > 1) {
                         widgetGrid.add(widget.getContainer(), pos.col, pos.row, spanCols, spanRows);
                     } else {
                         widgetGrid.add(widget.getContainer(), pos.col, pos.row);
@@ -733,36 +726,15 @@ public class Dashboard {
             GridPosition pos = widgetPositions.get(key);
             if (pos == null)
                 continue;
-            if (widget instanceof GraphWidget) {
-                for (int r = 0; r < 2; r++) {
-                    for (int c = 0; c < 2; c++) {
-                        int rr = pos.row + r;
-                        int cc = pos.col + c;
-                        if (rr >= 0 && rr < rowsToFill && cc >= 0 && cc < maxCols) {
-                            occupied[rr][cc] = true;
-                        }
-                    }
-                }
-            } else if (widget instanceof FieldViewWidget) {
-                for (int r = 0; r < 3; r++) {
-                    for (int c = 0; c < 3; c++) {
-                        int rr = pos.row + r;
-                        int cc = pos.col + c;
-                        if (rr >= 0 && rr < rowsToFill && cc >= 0 && cc < maxCols) {
-                            occupied[rr][cc] = true;
-                        }
-                    }
-                }
-            } else if (widget instanceof AutoSelectorWidget) {
-                for (int c = 0; c < 2; c++) {
+            int rSpan = widget.getRowSpan();
+            int cSpan = widget.getColSpan();
+            for (int r = 0; r < rSpan; r++) {
+                for (int c = 0; c < cSpan; c++) {
+                    int rr = pos.row + r;
                     int cc = pos.col + c;
-                    if (pos.row >= 0 && pos.row < rowsToFill && cc >= 0 && cc < maxCols) {
-                        occupied[pos.row][cc] = true;
+                    if (rr >= 0 && rr < rowsToFill && cc >= 0 && cc < maxCols) {
+                        occupied[rr][cc] = true;
                     }
-                }
-            } else {
-                if (pos.row >= 0 && pos.row < rowsToFill && pos.col >= 0 && pos.col < maxCols) {
-                    occupied[pos.row][pos.col] = true;
                 }
             }
         }
@@ -1046,6 +1018,13 @@ public class Dashboard {
                                             NetworkTableEntry robotEntry = subTable.getEntry("Robot");
                                             entryExists = robotEntry.exists();
                                         }
+                                    } else if ("button".equals(widgetConfig.type)) {
+                                        NetworkTableEntry runningEntry = table.getEntry(entryKey);
+                                        entryExists = runningEntry.exists();
+                                        if (!entryExists) {
+                                            NetworkTable subTable = table.getSubTable(entryKey);
+                                            entryExists = subTable != null && subTable.getEntry("running").exists();
+                                        }
                                     } else {
                                         NetworkTableEntry entry = table.getEntry(entryKey);
                                         if (entry.exists()) {
@@ -1071,6 +1050,10 @@ public class Dashboard {
                         } else if (widget instanceof AutoSelectorWidget) {
                             ((AutoSelectorWidget) widget)
                                     .setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                        } else if (widget instanceof ButtonWidget) {
+                            ((ButtonWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                        } else if (widget instanceof BooleanWidget) {
+                            ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
                         }
 
                         setupWidgetDragAndDrop(widget.getContainer(), widgetConfig.key);
@@ -1135,6 +1118,15 @@ public class Dashboard {
                                 if (subTable != null) {
                                     NetworkTableEntry robotEntry = subTable.getEntry("Robot");
                                     entryExists = robotEntry.exists();
+                                }
+                            } else if (widget instanceof ButtonWidget) {
+                                NetworkTableEntry runningEntry = table.getEntry(entryKey);
+                                entryExists = runningEntry.exists();
+                                if (!entryExists) {
+                                    NetworkTable subTable = table.getSubTable(entryKey);
+                                    if (subTable != null) {
+                                        entryExists = subTable.getEntry("running").exists();
+                                    }
                                 }
                             } else {
                                 NetworkTableEntry ntEntry = table.getEntry(entryKey);
@@ -1232,6 +1224,16 @@ public class Dashboard {
                                 shouldLoad = true;
                             }
                         }
+                    } else if ("button".equals(widgetConfig.type)) {
+                        NetworkTableEntry runningEntry = table.getEntry(entryKey);
+                        if (runningEntry.exists()) {
+                            shouldLoad = true;
+                        } else {
+                            NetworkTable subTable = table.getSubTable(entryKey);
+                            if (subTable != null && subTable.getEntry("running").exists()) {
+                                shouldLoad = true;
+                            }
+                        }
                     } else {
                         NetworkTableEntry entry = table.getEntry(entryKey);
                         if (entry.exists()) {
@@ -1251,6 +1253,7 @@ public class Dashboard {
                                 null);
 
                         if (widget != null) {
+                            widget.setResizeRequestCallback(() -> updateWidgetGrid());
                             widgets.put(widgetConfig.key, widget);
                             widgetPositions.put(widgetConfig.key,
                                     new GridPosition(widgetConfig.col, widgetConfig.row));
@@ -1265,6 +1268,10 @@ public class Dashboard {
                             } else if (widget instanceof AutoSelectorWidget) {
                                 ((AutoSelectorWidget) widget)
                                         .setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                            } else if (widget instanceof ButtonWidget) {
+                                ((ButtonWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                            } else if (widget instanceof BooleanWidget) {
+                                ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
                             }
 
                             setupWidgetDragAndDrop(widget.getContainer(), widgetConfig.key);
@@ -1294,6 +1301,8 @@ public class Dashboard {
             return "fieldview";
         } else if (widget instanceof AutoSelectorWidget) {
             return "autoselector";
+        } else if (widget instanceof ButtonWidget) {
+            return "button";
         } else if (widget instanceof NumberWidget) {
             return "number";
         } else if (widget instanceof BooleanWidget) {
@@ -1351,18 +1360,8 @@ public class Dashboard {
                         if (widgets.containsKey(widgetKey)) {
                             DashboardWidget w = widgets.get(widgetKey);
                             GridPosition newPos = targetPosition;
-                            int spanCols = 1, spanRows = 1;
-
-                            if (w instanceof GraphWidget) {
-                                spanCols = 2;
-                                spanRows = 2;
-                            } else if (w instanceof FieldViewWidget) {
-                                spanCols = 3;
-                                spanRows = 3;
-                            } else if (w instanceof AutoSelectorWidget) {
-                                spanCols = 2;
-                                spanRows = 1;
-                            }
+                            int spanCols = w.getColSpan();
+                            int spanRows = w.getRowSpan();
 
                             int clampedCol = Math.max(0, Math.min(targetPosition.col, 5 - spanCols));
                             newPos = new GridPosition(clampedCol, targetPosition.row);
@@ -1455,6 +1454,21 @@ public class Dashboard {
                         }
 
                         if (widget != null) {
+                            String finalKey = widget.getKey();
+                            if (widget instanceof NumberWidget) {
+                                ((NumberWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
+                            } else if (widget instanceof GraphWidget) {
+                                ((GraphWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
+                            } else if (widget instanceof FieldViewWidget) {
+                                ((FieldViewWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
+                            } else if (widget instanceof AutoSelectorWidget) {
+                                ((AutoSelectorWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
+                            } else if (widget instanceof ButtonWidget) {
+                                ((ButtonWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
+                            } else if (widget instanceof BooleanWidget) {
+                                ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
+                            }
+                            widget.setResizeRequestCallback(() -> updateWidgetGrid());
                             widgetPositions.put(widget.getKey(), targetPosition);
                             addWidgetToGrid(widget);
                             saveConfiguration();
@@ -1529,6 +1543,8 @@ public class Dashboard {
                 }
             } catch (Exception e) {
             }
+        } else if (key.endsWith("/running")) {
+            return "button";
         } else if (!key.contains("/")) {
             return null;
         } else {
@@ -1554,6 +1570,11 @@ public class Dashboard {
                         }
                         if (hasRobot && !(hasActive && hasOptions)) {
                             return "fieldview";
+                        }
+                        
+                        NetworkTableEntry typeEntry = subTable.getEntry(".type");
+                        if (typeEntry.exists() && "Command".equals(typeEntry.getString(""))) {
+                            return "button";
                         }
                     }
                 }
@@ -1595,6 +1616,10 @@ public class Dashboard {
                         : parentKey;
                 AutoSelectorWidget autoWidget = new AutoSelectorWidget(parentTitle, parentKey);
                 return autoWidget;
+            case "button":
+                String btnKey = key.endsWith("/running") ? key.substring(0, key.length() - 8) : key;
+                String btnTitle = btnKey.contains("/") ? btnKey.substring(btnKey.lastIndexOf('/') + 1) : btnKey;
+                return new ButtonWidget(btnTitle, btnKey);
             case "fieldview":
                 FieldViewWidget fieldWidget = new FieldViewWidget(title, key);
                 return fieldWidget;
@@ -1679,6 +1704,10 @@ public class Dashboard {
             ((FieldViewWidget) widget).setRemoveCallback(() -> removeWidget(key));
         } else if (widget instanceof AutoSelectorWidget) {
             ((AutoSelectorWidget) widget).setRemoveCallback(() -> removeWidget(key));
+        } else if (widget instanceof ButtonWidget) {
+            ((ButtonWidget) widget).setRemoveCallback(() -> removeWidget(key));
+        } else if (widget instanceof BooleanWidget) {
+            ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(key));
         }
         updateWidgetGrid();
         saveConfiguration();

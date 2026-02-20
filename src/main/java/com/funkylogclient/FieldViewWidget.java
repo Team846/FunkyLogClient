@@ -64,11 +64,22 @@ public class FieldViewWidget extends DashboardWidget {
     private static final long MIN_FRAME_INTERVAL_NANOS = 33_000_000;
     private long lastDrawNanos = 0;
     private static final double EDGE_PADDING = 10;
+    private int fieldRotationIndex = 0;
 
     public FieldViewWidget(String title, String key) {
         super(title, key);
         createFieldView();
         setupContextMenu();
+    }
+
+    @Override
+    public int getColSpan() {
+        return (fieldRotationIndex % 2 != 0) ? 2 : 3;
+    }
+
+    @Override
+    public int getRowSpan() {
+        return (fieldRotationIndex % 2 != 0) ? 4 : 3;
     }
 
     private void createFieldView() {
@@ -188,10 +199,12 @@ public class FieldViewWidget extends DashboardWidget {
     }
 
     private double getFieldImageAspectRatio() {
+        boolean rotated = (fieldRotationIndex % 2 != 0);
+        double sourceAspect = FIELD_LENGTH / FIELD_WIDTH;
         if (fieldImage != null && fieldImage.getWidth() > 0 && fieldImage.getHeight() > 0) {
-            return fieldImage.getWidth() / fieldImage.getHeight();
+            sourceAspect = fieldImage.getWidth() / fieldImage.getHeight();
         }
-        return FIELD_LENGTH / FIELD_WIDTH;
+        return rotated ? (1.0 / sourceAspect) : sourceAspect;
     }
 
     private static double[] layout(double width, double height) {
@@ -199,13 +212,25 @@ public class FieldViewWidget extends DashboardWidget {
     }
 
     private void redrawBackground() {
-        double width = backgroundCanvas.getWidth();
-        double height = backgroundCanvas.getHeight();
-        if (width <= 0 || height <= 0) return;
+        double cw = backgroundCanvas.getWidth();
+        double ch = backgroundCanvas.getHeight();
+        if (cw <= 0 || ch <= 0) return;
 
-        gcBackground.clearRect(0, 0, width, height);
-        double[] lay = layout(width, height);
-        double displayWidth = lay[0], displayHeight = lay[1], offsetX = lay[2], offsetY = lay[3];
+        gcBackground.clearRect(0, 0, cw, ch);
+        gcBackground.save();
+
+        double fieldW = cw;
+        double fieldH = ch;
+        if (fieldRotationIndex % 2 != 0) {
+            fieldW = ch;
+            fieldH = cw;
+        }
+
+        gcBackground.translate(cw / 2, ch / 2);
+        gcBackground.rotate(fieldRotationIndex * 90);
+        gcBackground.translate(-fieldW / 2, -fieldH / 2);
+
+        double displayWidth = fieldW, displayHeight = fieldH, offsetX = 0, offsetY = 0;
 
         if (fieldImage != null) {
             double srcW = fieldImage.getWidth();
@@ -226,17 +251,31 @@ public class FieldViewWidget extends DashboardWidget {
         gcBackground.setTextAlign(TextAlignment.CENTER);
         gcBackground.fillText("0", offsetX + displayWidth / 2, Math.max(offsetY - 3, 9));
         gcBackground.fillText(String.format("%.2fm", FIELD_LENGTH), offsetX + displayWidth / 2,
-                Math.min(offsetY + displayHeight + 12, height - 3));
+                Math.min(offsetY + displayHeight + 12, fieldH - 3));
+
+        gcBackground.restore();
     }
 
     private void redrawDynamicContent() {
-        double width = foregroundCanvas.getWidth();
-        double height = foregroundCanvas.getHeight();
-        if (width <= 0 || height <= 0) return;
+        double cw = foregroundCanvas.getWidth();
+        double ch = foregroundCanvas.getHeight();
+        if (cw <= 0 || ch <= 0) return;
 
-        gcForeground.clearRect(0, 0, width, height);
-        double[] lay = layout(width, height);
-        double displayWidth = lay[0], displayHeight = lay[1], offsetX = lay[2], offsetY = lay[3];
+        gcForeground.clearRect(0, 0, cw, ch);
+        gcForeground.save();
+
+        double fieldW = cw;
+        double fieldH = ch;
+        if (fieldRotationIndex % 2 != 0) {
+            fieldW = ch;
+            fieldH = cw;
+        }
+
+        gcForeground.translate(cw / 2, ch / 2);
+        gcForeground.rotate(fieldRotationIndex * 90);
+        gcForeground.translate(-fieldW / 2, -fieldH / 2);
+
+        double displayWidth = fieldW, displayHeight = fieldH, offsetX = 0, offsetY = 0;
 
         if (trajectory.size() > 1) {
             gcForeground.setStroke(Color.web("#FF8C00"));
@@ -336,6 +375,8 @@ public class FieldViewWidget extends DashboardWidget {
             gcForeground.strokeLine(x2 - xSize, y2 - xSize, x2 + xSize, y2 + xSize);
             gcForeground.strokeLine(x2 - xSize, y2 + xSize, x2 + xSize, y2 - xSize);
         }
+
+        gcForeground.restore();
     }
 
     private static double[] parsePoseFromValue(Object value) {
@@ -397,6 +438,32 @@ public class FieldViewWidget extends DashboardWidget {
             redrawDynamicContent();
         });
 
+        MenuItem rotateFieldMenu = new MenuItem("Rotate Field 90°");
+        rotateFieldMenu.setOnAction(e -> {
+            fieldRotationIndex = (fieldRotationIndex + 1) % 4;
+            requestResize();
+            // Force layout recalculation by triggering custom event code
+            double paneW = canvasPane.getWidth();
+            double paneH = canvasPane.getHeight();
+            if (paneW > 0 && paneH > 0) {
+                double aspect = getFieldImageAspectRatio();
+                double cw, ch;
+                if (paneW / paneH > aspect) {
+                    ch = paneH;
+                    cw = paneH * aspect;
+                } else {
+                    cw = paneW;
+                    ch = paneW / aspect;
+                }
+                backgroundCanvas.setWidth(cw);
+                backgroundCanvas.setHeight(ch);
+                foregroundCanvas.setWidth(cw);
+                foregroundCanvas.setHeight(ch);
+            }
+            redrawBackground();
+            redrawDynamicContent();
+        });
+
         MenuItem removeItem = new MenuItem("Remove Widget");
         removeItem.setOnAction(e -> {
             if (removeCallback != null) {
@@ -404,7 +471,7 @@ public class FieldViewWidget extends DashboardWidget {
             }
         });
 
-        contextMenu.getItems().addAll(toggleTrajectory, clearTrajectory, removeItem);
+        contextMenu.getItems().addAll(toggleTrajectory, clearTrajectory, rotateFieldMenu, removeItem);
 
         container.setOnContextMenuRequested(event -> {
             contextMenu.show(container, event.getScreenX(), event.getScreenY());
