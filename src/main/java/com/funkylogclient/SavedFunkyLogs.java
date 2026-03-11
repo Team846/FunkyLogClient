@@ -22,6 +22,9 @@ public class SavedFunkyLogs {
     private static boolean allowErrors = true;
     private static boolean allowWarnings = true;
     private static boolean allowLogs = true;
+    private static boolean allowTeleop = true;
+    private static boolean allowAuto = true;
+    private static boolean allowDisabled = true;
     private static String searchTerm = "";
 
     public static void displaySavedLogs(LinkedList<Message> messages, Stage primaryStage, String fileName) {
@@ -90,7 +93,32 @@ public class SavedFunkyLogs {
             allowLogs = nv;
             reFilterMessages();
         });
-        filtersBox.getChildren().addAll(filterByText, errorsCheckBox, warningsCheckBox, logsCheckBox);
+        
+        CheckBox teleopCheckBox = new CheckBox("Teleop");
+        teleopCheckBox.setSelected(true);
+        teleopCheckBox.setStyle(Styles.CHECKBOX_STYLE);
+        teleopCheckBox.selectedProperty().addListener((obs, ov, nv) -> {
+            allowTeleop = nv;
+            reFilterMessages();
+        });
+        
+        CheckBox autoCheckBox = new CheckBox("Auto");
+        autoCheckBox.setSelected(true);
+        autoCheckBox.setStyle(Styles.CHECKBOX_STYLE);
+        autoCheckBox.selectedProperty().addListener((obs, ov, nv) -> {
+            allowAuto = nv;
+            reFilterMessages();
+        });
+        
+        CheckBox disabledCheckBox = new CheckBox("Disabled");
+        disabledCheckBox.setSelected(true);
+        disabledCheckBox.setStyle(Styles.CHECKBOX_STYLE);
+        disabledCheckBox.selectedProperty().addListener((obs, ov, nv) -> {
+            allowDisabled = nv;
+            reFilterMessages();
+        });
+
+        filtersBox.getChildren().addAll(filterByText, errorsCheckBox, warningsCheckBox, logsCheckBox, teleopCheckBox, autoCheckBox, disabledCheckBox);
 
         messageList = FXCollections.observableArrayList();
         messageListView = new ListView<>(messageList);
@@ -410,6 +438,12 @@ public class SavedFunkyLogs {
         for (Message m : allMessages) {
             if (!checkMessageBySearch(m, lowerSearch))
                 continue;
+                
+            String periodName = m.getPeriodName();
+            if (periodName.equals("TELEOP") && !allowTeleop) continue;
+            if (periodName.equals("AUTO") && !allowAuto) continue;
+            if (periodName.equals("DISABLED") && !allowDisabled) continue;
+
             if (allowErrors && m.isError())
                 filtered.add(m);
             else if (allowWarnings && m.isWarning())

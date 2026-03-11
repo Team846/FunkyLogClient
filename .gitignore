@@ -26,3 +26,5 @@ Thumbs.db
 logs846/
 hs_err_pid*.log
 *.conf846
+*.gradle-local/
+dash.conf846

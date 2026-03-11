@@ -183,37 +183,42 @@ public class AutoSelectorWidget extends DashboardWidget {
 
             if (optionsEntry.exists()) {
                 String[] options = optionsEntry.getStringArray(new String[0]);
-                if (options != null && options.length > 0) {
-                    String currentActive = modeComboBox.getValue();
-
-                    Platform.runLater(() -> {
-                        autoModes.clear();
-                        for (String mode : options) {
-                            autoModes.add(mode.trim());
-                        }
-
-                        if (currentActive != null && !currentActive.isEmpty() && !autoModes.contains(currentActive)) {
-                            autoModes.add(currentActive);
-                        }
-
-                        modeComboBox.getItems().clear();
-                        modeComboBox.getItems().addAll(autoModes);
-
-                        long timeSinceWrite = System.currentTimeMillis() - lastWriteTime;
-                        if (timeSinceWrite > WRITE_COOLDOWN_MS && currentActive != null
-                                && autoModes.contains(currentActive)) {
-                            isUpdating = true;
-                            try {
-                                modeComboBox.setValue(currentActive);
-                            } finally {
-                                isUpdating = false;
-                            }
-                        }
-                    });
+                if (options != null) {
+                    Platform.runLater(() -> updateOptionsList(options));
                 }
             }
         } catch (Exception e) {
             System.err.println("Error refreshing auto modes: " + e.getMessage());
+        }
+    }
+
+    private void updateOptionsList(String[] options) {
+        String currentActive = modeComboBox.getValue();
+        autoModes.clear();
+        
+        if (options == null || options.length == 0) {
+            autoModes.add("None");
+        } else {
+            for (String mode : options) {
+                autoModes.add(mode.trim());
+            }
+        }
+
+        if (currentActive != null && !currentActive.isEmpty() && !autoModes.contains(currentActive)) {
+            autoModes.add(currentActive);
+        }
+
+        modeComboBox.getItems().setAll(autoModes);
+
+        long timeSinceWrite = System.currentTimeMillis() - lastWriteTime;
+        if (timeSinceWrite > WRITE_COOLDOWN_MS && currentActive != null
+                && autoModes.contains(currentActive)) {
+            isUpdating = true;
+            try {
+                modeComboBox.setValue(currentActive);
+            } finally {
+                isUpdating = false;
+            }
         }
     }
 
@@ -306,8 +311,9 @@ public class AutoSelectorWidget extends DashboardWidget {
                 if (optionsEntry != null && optionsEntry.exists()) {
                     String[] currentOptions = optionsEntry.getStringArray(new String[0]);
                     if (currentOptions != null && !Arrays.equals(currentOptions, lastKnownOptions)) {
+                        String[] optionsToUpdate = currentOptions.clone();
                         lastKnownOptions = currentOptions;
-                        Platform.runLater(this::refreshAutoModes);
+                        Platform.runLater(() -> updateOptionsList(optionsToUpdate));
                     }
                 }
 
