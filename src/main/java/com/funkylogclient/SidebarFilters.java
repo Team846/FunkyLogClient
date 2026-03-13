@@ -57,7 +57,19 @@ public class SidebarFilters {
             FunkyLogSorter.setLogsAllowed(newValue);
         });
 
-        filtersBox.getChildren().addAll(errorBox, warningBox, logsBox);
+        HBox teleopBox = createFilterRow("Teleop", true, (observable, oldValue, newValue) -> {
+            FunkyLogSorter.setTeleopAllowed(newValue);
+        });
+
+        HBox autoBox = createFilterRow("Auto", true, (observable, oldValue, newValue) -> {
+            FunkyLogSorter.setAutoAllowed(newValue);
+        });
+
+        HBox disabledBox = createFilterRow("Disabled", true, (observable, oldValue, newValue) -> {
+            FunkyLogSorter.setDisabledAllowed(newValue);
+        });
+
+        filtersBox.getChildren().addAll(errorBox, warningBox, logsBox, teleopBox, autoBox, disabledBox);
 
         return filtersBox;
     }

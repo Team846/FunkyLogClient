@@ -250,7 +250,7 @@ public class FunkyLogs extends Application {
             }
             SidebarNetworkTablesChooser.shutdown();
             SidebarJoystickInput.shutdown();
-            Platform.exit();
+            System.exit(0);
         });
         primaryStage.show();
 

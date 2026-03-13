@@ -24,6 +24,11 @@ public class FunkyLogSorter {
     public static CopyOnWriteArrayList<Message> errors = new CopyOnWriteArrayList<>();
 
     private static String searchTerm = "";
+    
+    // Period Filters
+    private static boolean allowTeleop = true;
+    private static boolean allowAuto = true;
+    private static boolean allowDisabled = true;
 
     public static List<Message> messages = new ArrayList<>(10000);
     public static List<Message> filtered = new ArrayList<>(10000);
@@ -75,7 +80,7 @@ public class FunkyLogSorter {
         List<Message> newFiltered = new ArrayList<>(messages.size() / 2);
         synchronized (messages) {
             for (Message m : messages) {
-                if (!checkMessageBySearch(m)) {
+                if (!checkMessageBySearch(m) || !checkPeriodFilter(m)) {
                     continue;
                 }
                 if (allowLogs && m.isLog()) {
@@ -111,6 +116,14 @@ public class FunkyLogSorter {
         }
     }
 
+    private static boolean checkPeriodFilter(Message msg) {
+        String periodName = msg.getPeriodName();
+        if (periodName.equals("TELEOP") && !allowTeleop) return false;
+        if (periodName.equals("AUTO") && !allowAuto) return false;
+        if (periodName.equals("DISABLED") && !allowDisabled) return false;
+        return true;
+    }
+
     public static void addMessage(Message m) {
         synchronized (messages) {
             messages.add(m);
@@ -127,7 +140,7 @@ public class FunkyLogSorter {
             errors.add(m);
         }
 
-        if (checkMessageBySearch(m)) {
+        if (checkMessageBySearch(m) && checkPeriodFilter(m)) {
             boolean shouldAdd = false;
             if (allowLogs && m.isLog()) {
                 shouldAdd = true;
@@ -187,6 +200,21 @@ public class FunkyLogSorter {
 
     public static void changeSearchTerm(String term) {
         searchTerm = term;
+        reFilter();
+    }
+
+    public static void setTeleopAllowed(boolean allow) {
+        allowTeleop = allow;
+        reFilter();
+    }
+
+    public static void setAutoAllowed(boolean allow) {
+        allowAuto = allow;
+        reFilter();
+    }
+
+    public static void setDisabledAllowed(boolean allow) {
+        allowDisabled = allow;
         reFilter();
     }
 

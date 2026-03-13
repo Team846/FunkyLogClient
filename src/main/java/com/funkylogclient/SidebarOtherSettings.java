@@ -65,6 +65,21 @@ public class SidebarOtherSettings {
         HBox.setHgrow(clearLogsButton, Priority.ALWAYS);
         buttonsContainer.getChildren().add(clearLogsButton);
 
+        Button fetchLogsButton = new Button("Fetch from Robot");
+        fetchLogsButton.setStyle(Styles.BUTTON_STYLE);
+        fetchLogsButton.setMaxWidth(Double.MAX_VALUE);
+        fetchLogsButton.setOnAction((ev) -> {
+            RoboRIOLogFetcher.showDialog(primaryStage);
+        });
+
+        fetchLogsButton.setOnMouseEntered(e -> fetchLogsButton.setStyle(Styles.BUTTON_HOVER_STYLE));
+        fetchLogsButton.setOnMouseExited(e -> fetchLogsButton.setStyle(Styles.BUTTON_STYLE));
+        fetchLogsButton.setOnMousePressed(e -> fetchLogsButton.setStyle(Styles.BUTTON_PRESSED_STYLE));
+        fetchLogsButton.setOnMouseReleased(e -> fetchLogsButton.setStyle(Styles.BUTTON_HOVER_STYLE));
+
+        HBox.setHgrow(fetchLogsButton, Priority.ALWAYS);
+        buttonsContainer.getChildren().add(fetchLogsButton);
+
         Button fileSelectionDialog = new Button("Open Log File");
         fileSelectionDialog.setStyle(Styles.BUTTON_STYLE);
         fileSelectionDialog.setMaxWidth(Double.MAX_VALUE);

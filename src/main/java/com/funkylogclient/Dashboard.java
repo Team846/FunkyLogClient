@@ -554,6 +554,7 @@ public class Dashboard {
 
             NetworkTable funkyFMSTable = instance.getTable("FunkyFMS");
             if (funkyFMSTable != null) {
+                System.out.println("FunkyLogs: Setting simulation controlMode to " + modeValue + " (" + mode + ")");
                 NetworkTableEntry controlModeEntry = funkyFMSTable.getEntry("controlMode");
                 controlModeEntry.setInteger(modeValue);
                 instance.flush();
@@ -601,14 +602,18 @@ public class Dashboard {
                     Number modeValueNumber = fmsControlDataEntry.getNumber(32.0);
                     int modeValue = modeValueNumber.intValue();
 
-                    if (modeValue == 32) {
+                    boolean isEnabled = (modeValue & 1) != 0;
+                    boolean isAuto = (modeValue & 2) != 0;
+                    boolean isTest = (modeValue & 4) != 0;
+
+                    if (!isEnabled) {
                         mode = "disabled";
-                    } else if (modeValue == 35) {
-                        mode = "auto";
-                    } else if (modeValue == 33) {
-                        mode = "teleop";
-                    } else if (modeValue == 37) {
+                    } else if (isTest) {
                         mode = "test";
+                    } else if (isAuto) {
+                        mode = "auto";
+                    } else {
+                        mode = "teleop";
                     }
                 }
 
