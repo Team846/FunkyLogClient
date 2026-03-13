@@ -119,7 +119,7 @@ public class RoboRIOLogFetcher {
                         "-o", "ConnectTimeout=5",
                         "-o", "BatchMode=yes",
                         "lvuser@" + ip, 
-                        "ls -1t /home/lvuser/foresting/*.log846"
+                        "ls -1 /home/lvuser/foresting/*.log846"
                     );
                     
                     Process process = pb.start();
@@ -129,6 +129,8 @@ public class RoboRIOLogFetcher {
                         String[] parts = line.split("/");
                         files.add(parts[parts.length - 1]);
                     }
+                    
+                    files.sort(java.util.Collections.reverseOrder());
                     
                     process.waitFor();
                 } catch (Exception e) {
