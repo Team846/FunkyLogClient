@@ -13,12 +13,16 @@ import javafx.scene.image.PixelReader;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.NetworkTable;
 
 public class HubAimWidget extends DashboardWidget {
     private static final double DEFAULT_SIZE = 260.0;
     private static final double FUEL_SIZE_RATIO = 48.0 / 400.0;
     private static final double HUB_OPACITY_THRESHOLD = 0.1;
     private static final double FUEL_DRAG_PADDING = 14.0;
+    private static final double HUB_SIZE = 41.73; // inches
 
     private final StackPane hubWrapper;
     private final Pane hubPane;
@@ -45,6 +49,7 @@ public class HubAimWidget extends DashboardWidget {
 
     public HubAimWidget(String title, String key) {
         super(title, key);
+        // this.isEditable = key.startsWith("Preferences/");
 
         baseHubImage = loadImage("base_hub.png");
         hexagonMaskImage = loadImage("Hexagon.png");
@@ -87,7 +92,7 @@ public class HubAimWidget extends DashboardWidget {
 
     @Override
     public int getRowSpan() {
-        return 2;
+        return 4;
     }
 
     private void createHubAimDisplay() {
@@ -131,12 +136,22 @@ public class HubAimWidget extends DashboardWidget {
             }
 
             beginFuelDrag(event.getX(), event.getY());
+            if (event.getX() > 400 || event.getY() > 400)
+            {
+                lockToCenter();
+                event.consume();
+            }
             event.consume();
+
         });
 
+        //ntable work starts here
         fuelView.setOnMouseReleased(event -> {
             draggingFuel = false;
             fuelView.setCursor(Cursor.HAND);
+            
+            writeCoordinateBack(getRelativeDistance(new double[]{event.getX(), event.getY()})); // TODO we want it from the center 
+            lockToCenter();
             event.consume();
         });
 
@@ -376,4 +391,40 @@ public class HubAimWidget extends DashboardWidget {
     public Node getContent() {
         return container;
     }
+
+    public double[] getRelativeDistance(double[] inputcoords) {
+        
+        double xFromCenter = HUB_SIZE * (inputcoords[0] - 200)/getHubSize(); // Find actual distance from the center of the hub in inches
+        double yFromCenter = HUB_SIZE * (inputcoords[1] - 200)/getHubSize(); // Find actual relative distance from the center of the hub in inches
+        
+    
+        return new double[]{xFromCenter, yFromCenter};        // TODO: calculate distance
+    }
+
+
+    //inputs human operator (misplaced) aim coords
+    private void writeCoordinateBack(double[] distance) 
+    {
+        try
+        {
+            NetworkTableInstance instance = NetworkTableInstance.getDefault();
+            NetworkTable prefs = instance.getTable("Preferences");
+            NetworkTable hubAim = prefs.getSubTable("HubAim");
+
+            hubAim.getEntry("x_offset").setDouble(distance[0]);
+            hubAim.getEntry("y_offset").setDouble(distance[1]);
+
+            System.out.println("X DIST: " + distance[0]); 
+            System.out.println("Y DIST: " + distance[1]); 
+        } 
+        catch (Exception e)
+        {
+            System.err.println("Hub aim preference did not work: " + e.getMessage());
+        }
+    }
+
+    private void lockToCenter() {
+        fuelView.relocate(hubWrapper.getWidth()/2 - 24, hubWrapper.getHeight()/2 - 24);
+    }
+
 }
