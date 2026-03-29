@@ -25,9 +25,6 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.openjfx:javafx-controls:17'
-    implementation 'org.openjfx:javafx-fxml:17'
-    
     implementation 'edu.wpi.first.ntcore:ntcore-java:2025.3.2'
     implementation 'edu.wpi.first.ntcore:ntcore-jni:2025.3.2:windowsx86-64'
     implementation 'edu.wpi.first.ntcore:ntcore-jni:2025.3.2:osxuniversal'
