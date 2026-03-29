@@ -709,7 +709,7 @@ public class Dashboard {
                     } else {
                         widgetGrid.add(widget.getContainer(), pos.col, pos.row);
                     }
-                    setupWidgetDragAndDrop(widget.getContainer(), key);
+                    setupWidgetDragAndDrop(widget.getDragHandle(), key);
                 }
             }
 
@@ -1052,6 +1052,9 @@ public class Dashboard {
                         } else if (widget instanceof FieldViewWidget) {
                             ((FieldViewWidget) widget)
                                     .setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                        } else if (widget instanceof HubAimWidget) {
+                            ((HubAimWidget) widget)
+                                    .setRemoveCallback(() -> removeWidget(widgetConfig.key));
                         } else if (widget instanceof AutoSelectorWidget) {
                             ((AutoSelectorWidget) widget)
                                     .setRemoveCallback(() -> removeWidget(widgetConfig.key));
@@ -1061,7 +1064,7 @@ public class Dashboard {
                             ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
                         }
 
-                        setupWidgetDragAndDrop(widget.getContainer(), widgetConfig.key);
+                        setupWidgetDragAndDrop(widget.getDragHandle(), widgetConfig.key);
                         toRemove.add(widgetConfig);
                         System.out.println(
                                 "Loaded widget: " + widgetConfig.key + " (" + widgetConfig.type + ") - " + 
@@ -1099,6 +1102,11 @@ public class Dashboard {
         for (Map.Entry<String, DashboardWidget> entry : widgets.entrySet()) {
             String key = entry.getKey();
             DashboardWidget widget = entry.getValue();
+
+            if (widget instanceof HubAimWidget) {
+                widget.setDisabled(false);
+                continue;
+            }
             
             boolean entryExists = false;
             
@@ -1270,6 +1278,9 @@ public class Dashboard {
                             } else if (widget instanceof FieldViewWidget) {
                                 ((FieldViewWidget) widget)
                                         .setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                            } else if (widget instanceof HubAimWidget) {
+                                ((HubAimWidget) widget)
+                                        .setRemoveCallback(() -> removeWidget(widgetConfig.key));
                             } else if (widget instanceof AutoSelectorWidget) {
                                 ((AutoSelectorWidget) widget)
                                         .setRemoveCallback(() -> removeWidget(widgetConfig.key));
@@ -1279,7 +1290,7 @@ public class Dashboard {
                                 ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
                             }
 
-                            setupWidgetDragAndDrop(widget.getContainer(), widgetConfig.key);
+                            setupWidgetDragAndDrop(widget.getDragHandle(), widgetConfig.key);
                             toRemove.add(widgetConfig);
                             System.out.println(
                                     "Successfully loaded widget: " + widgetConfig.key + " (" + widgetConfig.type + ")");
@@ -1304,6 +1315,8 @@ public class Dashboard {
             return "graph";
         } else if (widget instanceof FieldViewWidget) {
             return "fieldview";
+        } else if (widget instanceof HubAimWidget) {
+            return "hubaim";
         } else if (widget instanceof AutoSelectorWidget) {
             return "autoselector";
         } else if (widget instanceof ButtonWidget) {
@@ -1466,6 +1479,8 @@ public class Dashboard {
                                 ((GraphWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
                             } else if (widget instanceof FieldViewWidget) {
                                 ((FieldViewWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
+                            } else if (widget instanceof HubAimWidget) {
+                                ((HubAimWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
                             } else if (widget instanceof AutoSelectorWidget) {
                                 ((AutoSelectorWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
                             } else if (widget instanceof ButtonWidget) {
@@ -1628,6 +1643,8 @@ public class Dashboard {
             case "fieldview":
                 FieldViewWidget fieldWidget = new FieldViewWidget(title, key);
                 return fieldWidget;
+            case "hubaim":
+                return new HubAimWidget(title, key);
             case "text":
             default:
                 return new TextWidget(title, key);
@@ -1700,13 +1717,15 @@ public class Dashboard {
             widgetPositions.put(key, findNextAvailablePosition());
         }
 
-        setupWidgetDragAndDrop(widget.getContainer(), key);
+        setupWidgetDragAndDrop(widget.getDragHandle(), key);
         if (widget instanceof NumberWidget) {
             ((NumberWidget) widget).setRemoveCallback(() -> removeWidget(key));
         } else if (widget instanceof GraphWidget) {
             ((GraphWidget) widget).setRemoveCallback(() -> removeWidget(key));
         } else if (widget instanceof FieldViewWidget) {
             ((FieldViewWidget) widget).setRemoveCallback(() -> removeWidget(key));
+        } else if (widget instanceof HubAimWidget) {
+            ((HubAimWidget) widget).setRemoveCallback(() -> removeWidget(key));
         } else if (widget instanceof AutoSelectorWidget) {
             ((AutoSelectorWidget) widget).setRemoveCallback(() -> removeWidget(key));
         } else if (widget instanceof ButtonWidget) {

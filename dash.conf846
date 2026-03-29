@@ -113,5 +113,11 @@
     "title" : "positive (deg)",
     "col" : 2,
     "row" : 3
+  }, {
+    "key" : "SmartDashboard/HubAim",
+    "type" : "hubaim",
+    "title" : "Hub Aim",
+    "col" : 0,
+    "row" : 0
   } ]
 }
