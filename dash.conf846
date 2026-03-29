@@ -1,5 +1,11 @@
 {
   "widgets" : [ {
+    "key" : "Preferences/SwerveDrivetrain/x_location",
+    "type" : "number",
+    "title" : "x_location",
+    "col" : 2,
+    "row" : 4
+  }, {
     "key" : "SmartDashboard/SwerveDrivetrain/BR/target/steer_dir (deg)",
     "type" : "number",
     "title" : "steer_dir (deg)",
@@ -11,18 +17,6 @@
     "title" : "left_x (in)",
     "col" : 0,
     "row" : 1
-  }, {
-    "key" : "SmartDashboard/drive_command/target_angular_velocity (s^-1 deg)",
-    "type" : "number",
-    "title" : "target_angular_velocity (s^-1 deg)",
-    "col" : 3,
-    "row" : 3
-  }, {
-    "key" : "SmartDashboard/turret/error (deg)",
-    "type" : "number",
-    "title" : "error (deg)",
-    "col" : 2,
-    "row" : 4
   }, {
     "key" : "SmartDashboard/turret/target/pos (deg)",
     "type" : "number",
@@ -36,11 +30,23 @@
     "col" : 1,
     "row" : 2
   }, {
-    "key" : "Preferences/scorer_ss/passing/right_x (in)",
+    "key" : "SmartDashboard/shooter/debug/velocity_error (ft s^-1)",
     "type" : "number",
-    "title" : "right_x (in)",
-    "col" : 1,
+    "title" : "velocity_error (ft s^-1)",
+    "col" : 4,
+    "row" : 1
+  }, {
+    "key" : "Preferences/SwerveDrivetrain/location/x_location",
+    "type" : "number",
+    "title" : "x_location",
+    "col" : 2,
     "row" : 3
+  }, {
+    "key" : "Preferences/SwerveDrivetrain/y_location",
+    "type" : "number",
+    "title" : "y_location",
+    "col" : 3,
+    "row" : 4
   }, {
     "key" : "SmartDashboard/SendableChooser[0]",
     "type" : "autoselector",
@@ -69,8 +75,8 @@
     "key" : "SmartDashboard/SwerveDrivetrain/estimated_pose/position_x (in)",
     "type" : "number",
     "title" : "position_x (in)",
-    "col" : 3,
-    "row" : 4
+    "col" : 0,
+    "row" : 5
   }, {
     "key" : "Preferences/scorer_ss/passing/right_y (in)",
     "type" : "number",
@@ -83,6 +89,12 @@
     "title" : "MainField",
     "col" : 2,
     "row" : 0
+  }, {
+    "key" : "SmartDashboard/shooter_command/a",
+    "type" : "boolean",
+    "title" : "a",
+    "col" : 3,
+    "row" : 3
   }, {
     "key" : "SmartDashboard/SwerveDrivetrain/estimated_pose/position_y (in)",
     "type" : "number",
@@ -111,7 +123,13 @@
     "key" : "Preferences/turret/wrap/positive (deg)",
     "type" : "number",
     "title" : "positive (deg)",
-    "col" : 2,
+    "col" : 1,
     "row" : 3
+  }, {
+    "key" : "SmartDashboard/HubAim",
+    "type" : "hubaim",
+    "title" : "HubAim",
+    "col" : 0,
+    "row" : 0
   } ]
 }

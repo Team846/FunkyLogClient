@@ -94,6 +94,10 @@ public abstract class DashboardWidget {
         return container;
     }
 
+    public Node getDragHandle() {
+        return titleLabel;
+    }
+
     public String getKey() {
         return key;
     }

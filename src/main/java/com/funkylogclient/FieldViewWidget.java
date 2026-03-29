@@ -9,6 +9,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -18,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.NetworkTable;
 
 class Pose2D {
     double x;
@@ -64,7 +67,14 @@ public class FieldViewWidget extends DashboardWidget {
     private static final long MIN_FRAME_INTERVAL_NANOS = 33_000_000;
     private long lastDrawNanos = 0;
     private static final double EDGE_PADDING = 10;
+    private static final double FIELD_LENGTH_INCHES = 651.22;
+    private static final double FIELD_WIDTH_INCHES = 317.69;
+    /** Playable field width as a fraction of field26.png width (centered in the asset). */
+    private static final double FIELD_PNG_FIELD_WIDTH_RATIO = 966.0 / 1025.0;
+    /** Playable field height as a fraction of field26.png height (centered in the asset). */
+    private static final double FIELD_PNG_FIELD_HEIGHT_RATIO = 471.0 / 528.0;
     private int fieldRotationIndex = 0;
+    private double[] coords = new double[]{0,0};
 
     public FieldViewWidget(String title, String key) {
         super(title, key);
@@ -80,6 +90,92 @@ public class FieldViewWidget extends DashboardWidget {
     @Override
     public int getRowSpan() {
         return (fieldRotationIndex % 2 != 0) ? 4 : 3;
+    }
+    /**
+     * Maps canvas pixel coordinates (same space as {@link Canvas} mouse events) to inner field
+     * coordinates used when drawing: x along {@link #FIELD_LENGTH}, y along {@link #FIELD_WIDTH}.
+     * Inverse of translate(cw/2,ch/2) → rotate(index×90°) → translate(-fw/2,-fh/2).
+     */
+    private static double[] canvasToInnerFieldCoords(double lx, double ly, double cw, double ch, int rotationIndex) {
+        switch (rotationIndex & 3) {
+            case 0:
+                return new double[] { lx, ly };
+            case 1:
+                return new double[] { ch - ly, lx };
+            case 2:
+                return new double[] { cw - lx, ch - ly };
+            case 3:
+                return new double[] { ly, cw - lx };
+            default:
+                return new double[] { lx, ly };
+        }
+    }
+    /**
+     * Converts inner field rectangle coords (full PNG stretched to fw×fh) to normalized fractions
+     * [0,1] over the playable area only, accounting for centered border in field26.png.
+     */
+    private static double[] innerToPlayableFieldFractions(double ix, double iy, double fw, double fh) {
+        if (ix < 0 || ix > fw || iy < 0 || iy > fh) {
+            return null;
+        }
+        double u = ix / fw;
+        double v = iy / fh;
+        double u0 = (1.0 - FIELD_PNG_FIELD_WIDTH_RATIO) / 2.0;
+        double v0 = (1.0 - FIELD_PNG_FIELD_HEIGHT_RATIO) / 2.0;
+        double uField = (u - u0) / FIELD_PNG_FIELD_WIDTH_RATIO;
+        double vField = (v - v0) / FIELD_PNG_FIELD_HEIGHT_RATIO;
+        if (uField < 0 || uField > 1 || vField < 0 || vField > 1) {
+            return null;
+        }
+        return new double[] { uField, vField };
+    }
+
+    private void collectMouseCoords() {
+        canvasPane.setOnMousePressed(this::updateMouseCoordsFromEvent);
+        canvasPane.setOnMouseDragged(this::updateMouseCoordsFromEvent);
+        canvasPane.setOnMouseReleased(event -> resetMouseCoords());
+        canvasPane.setOnMouseExited(event -> resetMouseCoords());
+        resetMouseCoords();
+    }
+
+    private void updateMouseCoordsFromEvent(MouseEvent event) {
+        double canvasWidth = foregroundCanvas.getWidth();
+        double canvasHeight = foregroundCanvas.getHeight();
+        if (canvasWidth <= 0 || canvasHeight <= 0) {
+            resetMouseCoords();
+            return;
+        }
+
+        double canvasOffsetX = (canvasPane.getWidth() - canvasWidth) / 2.0;
+        double canvasOffsetY = (canvasPane.getHeight() - canvasHeight) / 2.0;
+        double localX = event.getX() - canvasOffsetX;
+        double localY = event.getY() - canvasOffsetY;
+
+        if (localX < 0 || localX > canvasWidth || localY < 0 || localY > canvasHeight) {
+            resetMouseCoords();
+            return;
+        }
+
+        boolean rotatedQuarterTurn = (fieldRotationIndex % 2 != 0);
+        double fw = rotatedQuarterTurn ? canvasHeight : canvasWidth;
+        double fh = rotatedQuarterTurn ? canvasWidth : canvasHeight;
+
+        double[] inner = canvasToInnerFieldCoords(localX, localY, canvasWidth, canvasHeight, fieldRotationIndex);
+        double[] frac = innerToPlayableFieldFractions(inner[0], inner[1], fw, fh);
+        if (frac == null) {
+            resetMouseCoords();
+            return;
+        }
+
+        coords[0] = frac[0] * FIELD_LENGTH_INCHES;
+        coords[1] = frac[1] * FIELD_WIDTH_INCHES;
+        writeCoordinateBack(coords);
+    }
+
+    private void resetMouseCoords() {
+        coords[0] = 0.0;
+        coords[1] = 0.0;
+        writeCoordinateBack(coords);
     }
 
     private void createFieldView() {
@@ -116,6 +212,8 @@ public class FieldViewWidget extends DashboardWidget {
         paneClip.heightProperty().bind(canvasPane.heightProperty());
         canvasPane.setClip(paneClip);
         canvasPane.getChildren().addAll(backgroundCanvas, foregroundCanvas);
+        collectMouseCoords();
+
         javafx.beans.value.ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> {
             double paneW = canvasPane.getWidth();
             double paneH = canvasPane.getHeight();
@@ -173,7 +271,7 @@ public class FieldViewWidget extends DashboardWidget {
                         displayX = lastPose.x + dx * extrapolationTime;
                         displayY = lastPose.y + dy * extrapolationTime;
                         displayRotation = lastPose.rotation + dtheta * extrapolationTime;
-
+                        
                         while (displayRotation > Math.PI)
                             displayRotation -= 2 * Math.PI;
                         while (displayRotation < -Math.PI)
@@ -271,6 +369,7 @@ public class FieldViewWidget extends DashboardWidget {
             fieldH = cw;
         }
 
+        
         gcForeground.translate(cw / 2, ch / 2);
         gcForeground.rotate(fieldRotationIndex * 90);
         gcForeground.translate(-fieldW / 2, -fieldH / 2);
@@ -483,6 +582,11 @@ public class FieldViewWidget extends DashboardWidget {
     }
 
     @Override
+    public void setDisabled(boolean disabled) {
+        super.setDisabled(false);
+    }
+
+    @Override
     public void updateValue(Object value) {
         double newX = robotX;
         double newY = robotY;
@@ -545,6 +649,28 @@ public class FieldViewWidget extends DashboardWidget {
         displayX = newX;
         displayY = newY;
         displayRotation = newRotation;
+    }
+
+    private void writeCoordinateBack(double[] distance) 
+    {
+        try
+        {
+            NetworkTableInstance instance = NetworkTableInstance.getDefault();
+            NetworkTable prefs = instance.getTable("Preferences");
+            NetworkTable location = prefs.getSubTable("SwerveDrivetrain"); 
+            NetworkTable subLocation = location.getSubTable("location"); 
+
+            subLocation.getEntry("x_location").setDouble(FIELD_LENGTH_INCHES-distance[0]);
+            subLocation.getEntry("y_location").setDouble(FIELD_WIDTH_INCHES-distance[1]);
+
+            System.out.println("X location in inches" + distance[0]);
+            System.out.println("Y location in inches" + distance[1]);
+
+        } 
+        catch (Exception e)
+        {
+            System.err.println("Ntables did not work" + e.getMessage());
+        }
     }
 
     @Override
