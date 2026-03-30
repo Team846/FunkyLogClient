@@ -16,6 +16,8 @@ import javafx.scene.layout.VBox;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.NetworkTable;
+import javafx.scene.input.MouseEvent;
+import javafx.event.EventHandler;
 
 public class HubAimWidget extends DashboardWidget {
     private static final double DEFAULT_SIZE = 260.0;
@@ -46,6 +48,13 @@ public class HubAimWidget extends DashboardWidget {
     private boolean draggingFuel = false;
     private boolean fuelInsideHub = true;
     private Runnable removeCallback;
+
+    private final EventHandler<MouseEvent> sceneReleaseHandler = event -> {
+        if (draggingFuel)
+        {
+            endFuelDrag();
+        }
+    };
 
     public HubAimWidget(String title, String key) {
         super(title, key);
@@ -83,6 +92,16 @@ public class HubAimWidget extends DashboardWidget {
         createHubAimDisplay();
         setupDragging();
         setupContextMenu();
+        container.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (oldScene != null)
+            {
+                oldScene.removeEventFilter(MouseEvent.MOUSE_RELEASED, sceneReleaseHandler);
+            }
+            if (newScene != null)
+            {
+                newScene.addEventFilter(MouseEvent.MOUSE_RELEASED, sceneReleaseHandler);
+            }
+        });
     }
 
     @Override
@@ -147,16 +166,19 @@ public class HubAimWidget extends DashboardWidget {
 
         //ntable work starts here
         fuelView.setOnMouseReleased(event -> {
-            draggingFuel = false;
-            fuelView.setCursor(Cursor.HAND);
-            
-            writeCoordinateBack(getRelativeDistance(new double[]{event.getX(), event.getY()})); // TODO we want it from the center 
+            writeCoordinateBack(getRelativeDistance());
+            endFuelDrag();
             lockToCenter();
             event.consume();
         });
 
         hubPane.setOnMouseDragged(event -> {
             if (!draggingFuel) {
+                return;
+            }
+
+            if (!event.isPrimaryButtonDown()) {
+                endFuelDrag();
                 return;
             }
 
@@ -186,8 +208,14 @@ public class HubAimWidget extends DashboardWidget {
             if (!draggingFuel) {
                 return;
             }
-            draggingFuel = false;
-            fuelView.setCursor(Cursor.HAND);
+            endFuelDrag();
+            event.consume();
+        });
+
+        hubPane.setOnMouseExited(event -> {
+            if (draggingFuel && !event.isPrimaryButtonDown()) {
+                endFuelDrag();
+            }
             event.consume();
         });
     }
@@ -220,6 +248,13 @@ public class HubAimWidget extends DashboardWidget {
         dragOffsetY = paneY - (fuelView.getLayoutY() + fuelView.getFitHeight() / 2.0);
         draggingFuel = true;
         fuelView.setCursor(Cursor.CLOSED_HAND);
+    }
+
+    private void endFuelDrag() {
+        draggingFuel = false;
+        dragOffsetX = 0.0;
+        dragOffsetY = 0.0;
+        fuelView.setCursor(Cursor.HAND);
     }
 
     private void relayout() {
@@ -393,12 +428,15 @@ public class HubAimWidget extends DashboardWidget {
     }
 
     public double[] getRelativeDistance(double[] inputcoords) {
-        
-        double xFromCenter = HUB_SIZE * (inputcoords[0] - 200)/getHubSize(); // Find actual distance from the center of the hub in inches
-        double yFromCenter = HUB_SIZE * (inputcoords[1] - 200)/getHubSize(); // Find actual relative distance from the center of the hub in inches
-        
-    
-        return new double[]{xFromCenter, yFromCenter};        // TODO: calculate distance
+        double xFromCenter = HUB_SIZE * (inputcoords[0] - 200) / getHubSize();
+        double yFromCenter = HUB_SIZE * (inputcoords[1] - 200) / getHubSize();
+        return new double[] { xFromCenter, yFromCenter };
+    }
+
+    public double[] getRelativeDistance() {
+        double xFromCenter = HUB_SIZE * (fuelCenterXRatio - 0.5);
+        double yFromCenter = HUB_SIZE * (fuelCenterYRatio - 0.5);
+        return new double[] { xFromCenter, yFromCenter };
     }
 
 
@@ -424,7 +462,10 @@ public class HubAimWidget extends DashboardWidget {
     }
 
     private void lockToCenter() {
-        fuelView.relocate(hubWrapper.getWidth()/2 - 24, hubWrapper.getHeight()/2 - 24);
+        fuelCenterXRatio = 0.5;
+        fuelCenterYRatio = 0.5;
+        positionFuel();
+        updateFuelState();
     }
 
 }
