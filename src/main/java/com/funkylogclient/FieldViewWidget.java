@@ -18,6 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.NetworkTable;
 
 class Pose2D {
     double x;
@@ -80,6 +83,17 @@ public class FieldViewWidget extends DashboardWidget {
     @Override
     public int getRowSpan() {
         return (fieldRotationIndex % 2 != 0) ? 4 : 3;
+    }
+    private void collectMouseCoords()
+    {
+        canvasPane.setOnMouseDragged(event -> {
+            double xRatio = canvasPane.getWidth()/fieldImage.getWidth();
+            double yRatio = canvasPane.getHeight()/fieldImage.getHeight();
+            double x_dist = xRatio * 651.22 * event.getX() / canvasPane.getWidth(); // x dist in inches 
+            double y_dist = yRatio * 317.69 * event.getY() / canvasPane.getHeight(); // y dist in inches
+
+            writeCoordinateBack(new double[]{x_dist, y_dist});
+        });
     }
 
     private void createFieldView() {
@@ -173,7 +187,7 @@ public class FieldViewWidget extends DashboardWidget {
                         displayX = lastPose.x + dx * extrapolationTime;
                         displayY = lastPose.y + dy * extrapolationTime;
                         displayRotation = lastPose.rotation + dtheta * extrapolationTime;
-
+                        
                         while (displayRotation > Math.PI)
                             displayRotation -= 2 * Math.PI;
                         while (displayRotation < -Math.PI)
@@ -257,6 +271,7 @@ public class FieldViewWidget extends DashboardWidget {
     }
 
     private void redrawDynamicContent() {
+        collectMouseCoords();
         double cw = foregroundCanvas.getWidth();
         double ch = foregroundCanvas.getHeight();
         if (cw <= 0 || ch <= 0) return;
@@ -271,6 +286,7 @@ public class FieldViewWidget extends DashboardWidget {
             fieldH = cw;
         }
 
+        
         gcForeground.translate(cw / 2, ch / 2);
         gcForeground.rotate(fieldRotationIndex * 90);
         gcForeground.translate(-fieldW / 2, -fieldH / 2);
@@ -483,6 +499,11 @@ public class FieldViewWidget extends DashboardWidget {
     }
 
     @Override
+    public void setDisabled(boolean disabled) {
+        super.setDisabled(false);
+    }
+
+    @Override
     public void updateValue(Object value) {
         double newX = robotX;
         double newY = robotY;
@@ -545,6 +566,27 @@ public class FieldViewWidget extends DashboardWidget {
         displayX = newX;
         displayY = newY;
         displayRotation = newRotation;
+    }
+
+    private void writeCoordinateBack(double[] distance) 
+    {
+        try
+        {
+            NetworkTableInstance instance = NetworkTableInstance.getDefault();
+            NetworkTable prefs = instance.getTable("Preferences");
+            NetworkTable location = prefs.getSubTable("location"); 
+
+            location.getEntry("x_location").setDouble(distance[0]);
+            location.getEntry("y_location").setDouble(distance[1]);
+
+            System.out.println("X location in inches" + distance[0]);
+            System.out.println("Y location in inches" + distance[1]);
+
+        } 
+        catch (Exception e)
+        {
+            System.err.println("Ntables did not work" + e.getMessage());
+        }
     }
 
     @Override
