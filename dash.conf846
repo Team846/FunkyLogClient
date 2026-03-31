@@ -116,8 +116,8 @@
   }, {
     "key" : "SmartDashboard/HubAim",
     "type" : "hubaim",
-    "title" : "Hub Aim",
-    "col" : 0,
+    "title" : "HubAim",
+    "col" : 2,
     "row" : 0
   } ]
 }
