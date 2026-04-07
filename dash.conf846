@@ -16,17 +16,21 @@
     "type" : "number",
     "title" : "left_x (in)",
     "col" : 0,
+    "key" : "SmartDashboard/MainField",
+    "type" : "fieldview",
+    "title" : "MainField",
+    "col" : 2,
     "row" : 1
   }, {
-    "key" : "SmartDashboard/turret/target/pos (deg)",
-    "type" : "number",
-    "title" : "pos (deg)",
-    "col" : 3,
-    "row" : 5
+    "key" : "Preferences/Robot/sim_fms",
+    "type" : "boolean",
+    "title" : "sim_fms",
+    "col" : 2,
+    "row" : 0
   }, {
-    "key" : "Preferences/shooter/genome/gains/kF",
-    "type" : "number",
-    "title" : "kF",
+    "key" : "SmartDashboard/Robot/game_data/Match_Timer",
+    "type" : "allianceshift",
+    "title" : "Alliance Shift",
     "col" : 1,
     "row" : 2
   }, {
@@ -106,30 +110,7 @@
     "type" : "number",
     "title" : "distance_vel (ft)",
     "col" : 1,
-    "row" : 0
-  }, {
-    "key" : "Preferences/scorer_ss/passing/left_y (in)",
-    "type" : "number",
-    "title" : "left_y (in)",
-    "col" : 0,
-    "row" : 2
-  }, {
-    "key" : "Preferences/ShootingCalculator/swim/projectGain",
-    "type" : "number",
-    "title" : "projectGain",
-    "col" : 1,
-    "row" : 1
-  }, {
-    "key" : "Preferences/turret/wrap/positive (deg)",
-    "type" : "number",
-    "title" : "positive (deg)",
-    "col" : 1,
-    "row" : 3
-  }, {
-    "key" : "SmartDashboard/HubAim",
-    "type" : "hubaim",
-    "title" : "HubAim",
-    "col" : 0,
+    "col" : 3,
     "row" : 0
   } ]
 }
