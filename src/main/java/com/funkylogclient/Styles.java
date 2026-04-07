@@ -21,6 +21,8 @@ public class Styles {
     public static final String TEXT_SECONDARY = "#B0B0B0";
     public static final String TEXT_MUTED = "#808080";
     public static final String TEXT_WHITE = "#FFFFFF";
+    public static final String TEXT_BLUE = "#4400ffff";
+    public static final String TEXT_RED = "#ff0000ff";
     
     public static final String ACCENT_PRIMARY = "#FF8C00";
     public static final String ACCENT_HOVER = "#FFA333";

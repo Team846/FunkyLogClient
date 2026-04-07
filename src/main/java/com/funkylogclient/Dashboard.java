@@ -789,6 +789,8 @@ public class Dashboard {
                         updateInterval = 100;
                     } else if (widget instanceof FieldViewWidget) {
                         updateInterval = 100;
+                    } else if (widget instanceof AllianceShiftWidget) {
+                        updateInterval = 250;
                     } else if (widget instanceof NumberWidget) {
                         updateInterval = 250;
                     } else {
@@ -848,6 +850,9 @@ public class Dashboard {
                             if (robotValue != null) {
                                 lastUpdateTime.put(key, currentTime);
                             }
+                        } else if (widget instanceof AllianceShiftWidget) {
+                            uiUpdatesReuse.add(() -> widget.updateValue(null));
+                            lastUpdateTime.put(key, currentTime);
                         } else {
                             NetworkTableEntry ntEntry = table.getEntry(entryKey);
 
@@ -1023,6 +1028,15 @@ public class Dashboard {
                                             NetworkTableEntry robotEntry = subTable.getEntry("Robot");
                                             entryExists = robotEntry.exists();
                                         }
+                                    } else if ("allianceshift".equals(widgetConfig.type)) {
+                                        NetworkTable sd = instance.getTable("SmartDashboard");
+                                        if (sd != null) {
+                                            NetworkTable robot = sd.getSubTable("Robot");
+                                            if (robot != null) {
+                                                NetworkTable gameData = robot.getSubTable("game_data");
+                                                entryExists = gameData != null;
+                                            }
+                                        }
                                     } else if ("button".equals(widgetConfig.type)) {
                                         NetworkTableEntry runningEntry = table.getEntry(entryKey);
                                         entryExists = runningEntry.exists();
@@ -1059,6 +1073,8 @@ public class Dashboard {
                             ((ButtonWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
                         } else if (widget instanceof BooleanWidget) {
                             ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                        } else if (widget instanceof AllianceShiftWidget) {
+                            ((AllianceShiftWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
                         }
 
                         setupWidgetDragAndDrop(widget.getContainer(), widgetConfig.key);
@@ -1229,6 +1245,14 @@ public class Dashboard {
                                 shouldLoad = true;
                             }
                         }
+                    } else if ("allianceshift".equals(widgetConfig.type)) {
+                        NetworkTable sd = instance.getTable("SmartDashboard");
+                        if (sd != null) {
+                            NetworkTable robot = sd.getSubTable("Robot");
+                            if (robot != null && robot.getSubTable("game_data") != null) {
+                                shouldLoad = true;
+                            }
+                        }
                     } else if ("button".equals(widgetConfig.type)) {
                         NetworkTableEntry runningEntry = table.getEntry(entryKey);
                         if (runningEntry.exists()) {
@@ -1277,6 +1301,8 @@ public class Dashboard {
                                 ((ButtonWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
                             } else if (widget instanceof BooleanWidget) {
                                 ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
+                            } else if (widget instanceof AllianceShiftWidget) {
+                                ((AllianceShiftWidget) widget).setRemoveCallback(() -> removeWidget(widgetConfig.key));
                             }
 
                             setupWidgetDragAndDrop(widget.getContainer(), widgetConfig.key);
@@ -1304,6 +1330,8 @@ public class Dashboard {
             return "graph";
         } else if (widget instanceof FieldViewWidget) {
             return "fieldview";
+        } else if (widget instanceof AllianceShiftWidget) {
+            return "allianceshift";
         } else if (widget instanceof AutoSelectorWidget) {
             return "autoselector";
         } else if (widget instanceof ButtonWidget) {
@@ -1472,6 +1500,8 @@ public class Dashboard {
                                 ((ButtonWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
                             } else if (widget instanceof BooleanWidget) {
                                 ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
+                            } else if (widget instanceof AllianceShiftWidget) {
+                                ((AllianceShiftWidget) widget).setRemoveCallback(() -> removeWidget(finalKey));
                             }
                             widget.setResizeRequestCallback(() -> updateWidgetGrid());
                             widgetPositions.put(widget.getKey(), targetPosition);
@@ -1529,6 +1559,9 @@ public class Dashboard {
     }
 
     private String determineWidgetTypeFromKey(String key) {
+        if (key != null && key.startsWith("SmartDashboard/Robot/game_data/")) {
+            return "allianceshift";
+        }
         if (key.endsWith("/active")) {
             String parentPath = key.substring(0, key.length() - 7);
             try {
@@ -1628,6 +1661,8 @@ public class Dashboard {
             case "fieldview":
                 FieldViewWidget fieldWidget = new FieldViewWidget(title, key);
                 return fieldWidget;
+            case "allianceshift":
+                return new AllianceShiftWidget("Alliance Shift", key);
             case "text":
             default:
                 return new TextWidget(title, key);
@@ -1713,6 +1748,8 @@ public class Dashboard {
             ((ButtonWidget) widget).setRemoveCallback(() -> removeWidget(key));
         } else if (widget instanceof BooleanWidget) {
             ((BooleanWidget) widget).setRemoveCallback(() -> removeWidget(key));
+        } else if (widget instanceof AllianceShiftWidget) {
+            ((AllianceShiftWidget) widget).setRemoveCallback(() -> removeWidget(key));
         }
         updateWidgetGrid();
         saveConfiguration();
