@@ -351,12 +351,6 @@ public class FieldViewWidget extends DashboardWidget {
 
         double[] trajA = fieldObjects.get("trajA");
         double[] trajB = fieldObjects.get("trajB");
-        if (trajA != null && trajA.length >= 2) {
-            System.out.println("trajA: " + java.util.Arrays.toString(trajA));
-        }
-        if (trajB != null && trajB.length >= 2) {
-            System.out.println("trajB: " + java.util.Arrays.toString(trajB));
-        }
         if (trajA != null && trajA.length >= 2 && trajB != null && trajB.length >= 2) {
             double x1 = offsetX + ((trajA[0] + POSITION_OFFSET_X_M) / FIELD_LENGTH) * displayWidth;
             double y1 = offsetY + displayHeight - ((trajA[1] + POSITION_OFFSET_Y_M) / FIELD_WIDTH) * displayHeight;

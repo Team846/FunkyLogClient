@@ -248,8 +248,7 @@ public class FunkyLogs extends Application {
             if (dashboard != null) {
                 dashboard.shutdown();
             }
-            SidebarNetworkTablesChooser.shutdown();
-            SidebarJoystickInput.shutdown();
+            shutDownInstances();
             System.exit(0);
         });
         primaryStage.show();
@@ -673,8 +672,6 @@ public class FunkyLogs extends Application {
             if (dashboard != null) {
                 dashboard.shutdown();
             }
-            SidebarNetworkTablesChooser.shutdown();
-            SidebarJoystickInput.shutdown();
             animateClose(primaryStage);
         });
         Button minimizeButton = createWindowsButton("—", false, () -> animateMinimize(primaryStage));
@@ -1099,14 +1096,15 @@ public class FunkyLogs extends Application {
         
         ParallelTransition closeAnim = new ParallelTransition(fadeOut, scaleDown);
         closeAnim.setOnFinished(e -> {
-            if (dashboard != null) {
-                dashboard.shutdown();
-            }
-            SidebarNetworkTablesChooser.shutdown();
-            SidebarJoystickInput.shutdown();
+            shutDownInstances();
             System.exit(0);
         });
         closeAnim.play();
+    }
+
+    private static void shutDownInstances() {
+        SidebarNetworkTablesChooser.shutdown();
+        SidebarJoystickInput.shutdown();
     }
 
     public static void main(String[] args) {

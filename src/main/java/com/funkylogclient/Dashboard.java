@@ -535,30 +535,37 @@ public class Dashboard {
     }
 
     private void setSimulationMode(String mode) {
+        if (!NetworkTablesClient.isConnected()) {
+            NetworkTablesClient.connect();
+            new Thread(() -> {
+                try {
+                    long start = System.currentTimeMillis();
+                    while (!NetworkTablesClient.isConnected() && (System.currentTimeMillis() - start) < 1200) {
+                        Thread.sleep(25);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                writeSimulationMode(mode);
+            }, "FunkyLog-SetSimMode").start();
+        } else {
+            writeSimulationMode(mode);
+        }
+    }
+
+    private void writeSimulationMode(String mode) {
         try {
             NetworkTableInstance instance = NetworkTableInstance.getDefault();
-            if (instance == null) {
-                return;
-            }
-
-            int modeValue = 0;
-            if (mode.equals("disabled")) {
-                modeValue = 0;
-            } else if (mode.equals("teleop")) {
-                modeValue = 1;
-            } else if (mode.equals("auto")) {
-                modeValue = 2;
-            } else if (mode.equals("test")) {
-                modeValue = 3;
-            }
+            if (instance == null) return;
 
             NetworkTable funkyFMSTable = instance.getTable("FunkyFMS");
-            if (funkyFMSTable != null) {
-                System.out.println("FunkyLogs: Setting simulation controlMode to " + modeValue + " (" + mode + ")");
-                NetworkTableEntry controlModeEntry = funkyFMSTable.getEntry("controlMode");
-                controlModeEntry.setInteger(modeValue);
-                instance.flush();
-            }
+            if (funkyFMSTable == null) return;
+            long controlMode = 0;
+            if ("teleop".equals(mode)) controlMode = 1;
+            else if ("auto".equals(mode)) controlMode = 2;
+            else if ("test".equals(mode)) controlMode = 3;
+            funkyFMSTable.getEntry("controlMode").setDouble((double) controlMode);
+            instance.flush();
         } catch (Exception e) {
             System.err.println("Error setting simulation mode: " + e.getMessage());
         }
@@ -590,32 +597,22 @@ public class Dashboard {
                     return;
                 }
 
-                NetworkTable fmsTable = instance.getTable("FMSInfo");
-                if (fmsTable == null) {
+                NetworkTable funkyFMS = instance.getTable("FunkyFMS");
+                if (funkyFMS == null) {
                     return;
                 }
 
-                NetworkTableEntry fmsControlDataEntry = fmsTable.getEntry("FMSControlData");
-                String mode = "disabled";
-
-                if (fmsControlDataEntry != null && fmsControlDataEntry.exists()) {
-                    Number modeValueNumber = fmsControlDataEntry.getNumber(32.0);
-                    int modeValue = modeValueNumber.intValue();
-
-                    boolean isEnabled = (modeValue & 1) != 0;
-                    boolean isAuto = (modeValue & 2) != 0;
-                    boolean isTest = (modeValue & 4) != 0;
-
-                    if (!isEnabled) {
-                        mode = "disabled";
-                    } else if (isTest) {
-                        mode = "test";
-                    } else if (isAuto) {
-                        mode = "auto";
-                    } else {
-                        mode = "teleop";
-                    }
+                NetworkTableEntry controlModeEntry = funkyFMS.getEntry("controlMode");
+                long cm = 0;
+                if (controlModeEntry != null) {
+                    cm = (long) controlModeEntry.getDouble(0.0);
                 }
+
+                String mode;
+                if (cm == 1) mode = "teleop";
+                else if (cm == 2) mode = "auto";
+                else if (cm == 3) mode = "test";
+                else mode = "disabled";
 
                 final String finalMode = mode;
                 Platform.runLater(() -> {

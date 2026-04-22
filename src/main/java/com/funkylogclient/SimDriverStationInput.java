@@ -346,13 +346,14 @@ public class SimDriverStationInput {
             if (!NetworkTablesClient.isConnected()) return false;
             NetworkTableInstance instance = NetworkTableInstance.getDefault();
             if (instance == null) return false;
-            NetworkTable fmsTable = instance.getTable("FMSInfo");
-            if (fmsTable == null) return false;
-            NetworkTableEntry entry = fmsTable.getEntry("FMSControlData");
-            if (entry == null || !entry.exists()) return false;
-            Number n = entry.getNumber(32.0);
-            int mode = n.intValue();
-            return mode == 33;
+            NetworkTable funkyFMS = instance.getTable("FunkyFMS");
+            if (funkyFMS == null) return false;
+            NetworkTableEntry modeEntry = funkyFMS.getEntry("controlMode");
+            long mode = 0;
+            if (modeEntry != null) {
+                mode = (long) modeEntry.getDouble(0.0);
+            }
+            return mode == 1;
         } catch (Exception e) {
             return false;
         }

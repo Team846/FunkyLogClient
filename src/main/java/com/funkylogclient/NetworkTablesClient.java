@@ -103,6 +103,8 @@ public class NetworkTablesClient {
                 return;
 
             try {
+                if (ntInstance == null)
+                    return;
                 boolean isConnected = ntInstance.isConnected();
 
                 if (isConnected && ntInstance != null) {
